@@ -13,6 +13,7 @@ exports.router = void 0;
 const express_1 = require("express");
 const dbconnection_1 = require("./dbconnection");
 exports.router = (0, express_1.Router)();
+
 exports.router.get('/getUser', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const values = yield (0, dbconnection_1.connect)();
