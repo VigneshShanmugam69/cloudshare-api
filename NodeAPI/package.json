@@ -1,0 +1,28 @@
+{
+  "name": "packages",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "node dist/server.js",
+    "debug": "node dist/server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@okta/jwt-verifier": "^3.0.1",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/mysql": "^2.15.21",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-bearer-token": "^2.4.0",
+    "mysql2": "^3.2.0",
+    "sqlite3": "^5.1.4",
+    "tsc": "^2.0.4",
+    "typeorm": "^0.3.12",
+    "typescript": "^4.9.5"
+  }
+}
