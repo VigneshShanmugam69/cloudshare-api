@@ -12,8 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.router = void 0;
 const express_1 = require("express");
 const dbconnection_1 = require("./dbconnection");
+const aws_sdk_1 = require("aws-sdk");
 exports.router = (0, express_1.Router)();
-
 exports.router.get('/getUser', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const values = yield (0, dbconnection_1.connect)();
@@ -68,6 +68,57 @@ exports.router.post('/verifyUser', (req, res) => __awaiter(void 0, void 0, void 
     }
     catch (error) {
         console.log(error);
+        res.status(500).send(error);
+    }
+}));
+exports.router.get('/generateStsToken', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const accessKeyId = 'AKIA6HCJB5CURVIR3QW7';
+        const secretAccessKey = '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';
+        const roleArn = 'arn:aws:iam::977258277033:role/cloudstier-Gkumar-iam-role-demo-001';
+        const sts = new aws_sdk_1.STS({
+            accessKeyId,
+            secretAccessKey,
+            region: 'us-east-1',
+        });
+        const params = {
+            DurationSeconds: 3600,
+            RoleArn: roleArn,
+            RoleSessionName: 'gkumar-assumerole',
+        };
+        yield sts.assumeRole(params, (err, data) => {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                res.send(data);
+            }
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).send(error);
+    }
+}));
+exports.router.post('/listBucketsByStsToken', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const s3 = new aws_sdk_1.S3({
+            accessKeyId: req.body.AccessKeyId,
+            secretAccessKey: req.body.SecretAccessKey,
+            sessionToken: req.body.SessionToken,
+            region: 'us-east-1',
+        });
+        yield s3.listBuckets((err, data) => {
+            if (err) {
+                res.send(err);
+            }
+            else {
+                console.log('S3 Buckets:', data.Buckets);
+                res.send(data.Buckets);
+            }
+        }).promise();
+    }
+    catch (error) {
         res.status(500).send(error);
     }
 }));
