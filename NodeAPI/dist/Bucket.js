@@ -8,21 +8,18 @@ const s3Conn = require("@aws-sdk/client-s3")
 //import { ListBucketsCommand,DeleteBucketCommand,CreateBucketCommand, S3Client } from "@aws-sdk/client-s3";
 
 const client = new s3Conn.S3Client({
-    apiVersion: '0.1', region: 'us-east-1',
+    region: 'us-east-1',
     credentials: {
-        accessKeyId: 'AKIA6HCJB5CURVIR3QW7',
-        secretAccessKey: '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'
+        accessKeyId: 'AKIA6HCJB5CUWQJCY3FQ',
+        secretAccessKey: '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'
     }
 });
 
 exports.router.get('/listbuckets', async (req, res) => {
     const command = new s3Conn.ListBucketsCommand({});
-    console.log("command==>>", command)
+
     try {
         const { Owner, Buckets } = await client.send(command);
-        console.log("bucket==>", Buckets)
-        console.log("owner==>", Owner)
-
         res.send(Buckets)
     } catch (err) {
         console.error(err);
@@ -31,9 +28,9 @@ exports.router.get('/listbuckets', async (req, res) => {
 
 
 exports.router.get('/createbucket', async (req, res) => {
+    const payload = req.body;
     const command = new s3Conn.CreateBucketCommand({
-        Bucket: "cloudstier-marulkumar-demo-003",
-
+        Bucket: payload.Bucket
     });
     try {
         const { Location } = await client.send(command)
@@ -46,15 +43,38 @@ exports.router.get('/createbucket', async (req, res) => {
 });
 
 exports.router.get('/deletebucket', async (req, res) => {
+    const payload = req.body;
     const command = new s3Conn.DeleteBucketCommand({
-        Bucket: "cloudstier-marulkumar-demo-003",
+        Bucket: payload.Bucket
     });
 
     try {
         const { response } = await client.send(command)
-        res.send(` bucket is deleted`)
+        res.send(`${response}${payload.Bucket} bucket is deleted`)
     } catch (err) {
         console.error(err);
+    }
+
+});
+
+// Buckettags task.no:312
+
+
+exports.router.get('/buckettags', async (req, res) => {
+    // async function name(){
+    const payload = req.body;
+    const input = {
+        "Bucket": payload.Bucket
+    }
+    const command = new s3Conn.GetBucketTaggingCommand(input);
+    try {
+        const response = await client.send(command);
+        // console.log(response);
+        res.send(response);
+
+    } catch (err) {
+        console.error(err);
+
     }
 
 });
