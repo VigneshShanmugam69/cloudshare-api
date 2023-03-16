@@ -3,7 +3,8 @@
 const express_1 = require("express");
 const dbconnection_1 = require("./dbconnection");
 exports.router = (0, express_1.Router)();
-const s3Conn = require("@aws-sdk/client-s3")
+const s3Conn = require("@aws-sdk/client-s3");
+const { createScanner } = require("typescript");
 
 //import { ListBucketsCommand,DeleteBucketCommand,CreateBucketCommand, S3Client } from "@aws-sdk/client-s3";
 
@@ -22,7 +23,7 @@ exports.router.get('/listbuckets', async (req, res) => {
         const { Owner, Buckets } = await client.send(command);
         res.send(Buckets)
     } catch (err) {
-        console.error(err);
+        res.send(err);
     }
 });
 
@@ -38,7 +39,7 @@ exports.router.get('/createbucket', async (req, res) => {
         res.send(`${Location} bucket is created`)
 
     } catch (err) {
-        console.error(err);
+        res.send(err);
     }
 });
 
@@ -52,7 +53,7 @@ exports.router.get('/deletebucket', async (req, res) => {
         const { response } = await client.send(command)
         res.send(`${response}${payload.Bucket} bucket is deleted`)
     } catch (err) {
-        console.error(err);
+        res.send(err);
     }
 
 });
@@ -73,8 +74,47 @@ exports.router.get('/buckettags', async (req, res) => {
         res.send(response);
 
     } catch (err) {
-        console.error(err);
+        res.send(err);
 
     }
 
 });
+
+// // ======cross region=====
+// exports.router.get('/crossRegion', async (req, res) => {
+
+//     const input = {
+//         "Bucket": "cloudstier-gkumar-demo-001"
+//     }
+//     const command = new s3Conn.GetBucketCorsCommand(input);
+//     try {
+//         const response = await client.send(command);
+//         res.send(response);
+//     } catch (err) {
+//         console.error(err);
+//     }
+
+// }) ;   
+
+// // ------
+
+//==========GetBucketAclCommand +permissions========
+// Buckettags task.no:
+
+exports.router.get('/bucketPermissions', async (req, res) => {
+    const payload = req.body;
+    const input = {
+        "Bucket": payload.Bucket
+
+    }
+    try {
+        const command = new s3Conn.GetBucketAclCommand(input);
+        const response = await client.send(command);
+        res.send(response);
+    } catch (err) {
+        res.send(err);
+    }
+
+
+});
+
