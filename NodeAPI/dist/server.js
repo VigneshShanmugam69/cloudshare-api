@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const user = require("./Users");
-const bucket = require("./Bucket");
+const bucket = require("./bucket");
 const objects = require("./Objects");
 const app = express();
 app.use(cors());
