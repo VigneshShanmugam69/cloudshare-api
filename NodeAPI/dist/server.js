@@ -14,6 +14,10 @@ app.use(user.router);
 app.use(bucket.router);
 app.use(objects.router);
 app.use(authorization.router);
+
+
+
+
 app.listen(4201, () => {
     return console.log('CloudShare server started...');
 });
