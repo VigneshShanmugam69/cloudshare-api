@@ -32,27 +32,27 @@ exports.router.get('/properties', async (req, res) => {
   const owner = await getBucketAcl();
   const bucketName = await getBucketName();
   const totalFolder = await gettotalfolder();
-  const totalfileSize = await getTotalSize();
-  const Bucketlogging = await getBucketLogging();
-  const bucketversion = await getBucketVersionig();
+  const totalFileSize = await getTotalSize();
+  const bucketLogging = await getBucketLogging();
+  const bucketVersion = await getBucketVersionig();
   const tranferAcceleration = await getBucketAccelerate();
-  const ServerSideEncryption = await BucketServersideEncryption();
+  const serversideEncryption = await BucketServersideEncryption();
   const getBucketRequestPayment = await requespays();
   const bucketmodificationDate=await bucketmodification();
   const bucketReplication =await bucketreplication();
   //const filetypes = await typefile();
   const region=await bucketLocation();
-  const StorageType =await bucketstorageclass();
-  const totalobject=await noobj();
+  const storageType =await bucketstorageclass();
+  const totalObject=await noobj();
 
   res.send({
-    owner, bucketName, totalFolder, totalfileSize, Bucketlogging, bucketversion, tranferAcceleration,totalobject,
-    ServerSideEncryption, getBucketRequestPayment,bucketmodificationDate,region,bucketReplication,StorageType
+    owner, bucketName, totalFolder, totalFileSize, bucketLogging, bucketVersion, tranferAcceleration,totalObject,
+    serversideEncryption, getBucketRequestPayment,bucketmodificationDate,region,bucketReplication,storageType
   })
 });
 
 
- //owner
+ //To get owner of the bucket 
 function getBucketAcl() {
  return new Promise((resolve, reject) => {
     s3.getBucketAcl(params, (err, data) => {
@@ -72,7 +72,7 @@ function getBucketAcl() {
 
 
 
- //Bucket name
+ //To get  name of the bucket
 function getBucketName() {
  return new Promise((resolve, reject) => {
     s3.listBuckets((err, data) => {
@@ -91,7 +91,7 @@ function getBucketName() {
 
 
 
- // total folder
+ // calculate total number of folder in a bucket
 function gettotalfolder() {
  
   return new Promise((resolve, reject) => {
@@ -110,7 +110,7 @@ function gettotalfolder() {
   })
 }
 
-//Total file size
+//calculate total fileSize of bucket objects
 function getTotalSize() {
    return new Promise((resolve, reject) => {
     let totalSize = 0;
@@ -142,7 +142,7 @@ function getTotalSize() {
   })
 }
 
-//Bucket logging
+//To check bucketLogging status
 function getBucketLogging() {
    return new Promise((resolve, reject) => {
     s3.getBucketLogging(params, (err, data) => {
@@ -159,7 +159,7 @@ function getBucketLogging() {
   })
 }
 
-  //Bucket versining
+  //To check   BucketVersining status
 function getBucketVersionig() {
  return new Promise((resolve, reject) => {
 
@@ -170,7 +170,7 @@ function getBucketVersionig() {
       } 
       else 
       {
-        //console.log('Bucket versioning configuration:');
+        
         resolve({ data });
       }
     });
@@ -179,7 +179,7 @@ function getBucketVersionig() {
 }
 
 
-//BucketAccelerate
+//To check BucketAccelerate  status 
 function getBucketAccelerate() {
    return new Promise((resolve, reject) => {
 
@@ -196,7 +196,7 @@ function getBucketAccelerate() {
 
 
 
- // server side encryption
+ // To check server side encryption status of bucket
 function BucketServersideEncryption() {
  return new Promise((resolve, reject) => {
 s3.getBucketEncryption(params, (err, data) => {
@@ -214,7 +214,7 @@ s3.getBucketEncryption(params, (err, data) => {
 }
 
 
-  //reques pays
+  //To find the requesterPay status
 function requespays() {
 return new Promise((resolve, reject) => {
 s3.getBucketRequestPayment(params, (err, data) => {
@@ -267,7 +267,7 @@ s3.getBucketRequestPayment(params, (err, data) => {
 
 
 
-//bucket modification
+//Check lastModification of the bucket
 function bucketmodification() {
 return new Promise((resolve, reject) => {
 s3.listObjectsV2(params, function (err, data) {
@@ -284,7 +284,7 @@ s3.listObjectsV2(params, function (err, data) {
   )
 }
 
-//bucket location
+//get bucketLocation
 function bucketLocation() {
 return new Promise((resolve, reject) => {
 s3.getBucketLocation(params, (err, data) => {
@@ -302,7 +302,7 @@ s3.getBucketLocation(params, (err, data) => {
   )
 }
 
-//replication
+//check bucket replication status
 function bucketreplication() {
 return new Promise((resolve, reject) => {
  s3.getBucketReplication({ Bucket: params.Bucket }, (err, data) => {
@@ -319,7 +319,7 @@ return new Promise((resolve, reject) => {
   )
 }
 
-// storage class 
+// To find bucket storage class 
 function bucketstorageclass() {
  return new Promise((resolve, reject) => {
 s3.getBucketLifecycleConfiguration(params, (err, data) => {
@@ -338,7 +338,7 @@ s3.getBucketLifecycleConfiguration(params, (err, data) => {
   )
 }
 
-// no of obj
+// Get total number of object in a bucket
 function noobj() {
   return new Promise((resolve, reject) => {
     s3.listObjectsV2(params, (err, data) => {
@@ -352,31 +352,3 @@ function noobj() {
    }
    )
  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
