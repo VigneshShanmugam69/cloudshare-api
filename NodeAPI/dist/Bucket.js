@@ -51,7 +51,7 @@ exports.router.get('/deletebucket', async (req, res) => {
 
     try {
         const { response } = await client.send(command)
-        res.send(`${response}${payload.Bucket} bucket is deleted`)
+        // res.send(`${response} `)
     } catch (err) {
         res.send(err);
     }
@@ -59,6 +59,7 @@ exports.router.get('/deletebucket', async (req, res) => {
 });
 
 // Buckettags task.no:312
+
 
 
 exports.router.get('/buckettags', async (req, res) => {
@@ -96,10 +97,10 @@ exports.router.get('/buckettags', async (req, res) => {
 
 // }) ;   
 
-// // ------
 
-//==========GetBucketAclCommand +permissions========
-// Buckettags task.no:
+
+
+// Buckettags task.no:323
 
 exports.router.get('/bucketPermissions', async (req, res) => {
     const payload = req.body;
@@ -117,4 +118,27 @@ exports.router.get('/bucketPermissions', async (req, res) => {
 
 
 });
+
+// Bucket Versions task.No:346
+
+exports.router.get('/bucketVersions', async (req, res) => {
+    const payload = req.body;
+    const input = {
+        "Bucket": payload.Bucket
+
+    }
+    try {
+        const command = new s3Conn.ListObjectVersionsCommand(input);
+        const response = await client.send(command);
+        res.send(response);
+    } catch (err) {
+        res.send(err);
+    }
+
+
+});
+
+
+
+
 
