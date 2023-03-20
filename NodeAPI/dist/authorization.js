@@ -1,6 +1,10 @@
 const express_1 = require("express");
 const AWS = require('aws-sdk');
 const fs = require("fs")
+const generator = require('generate-password');
+const connect = require('./dbconnection');
+const nodemailer = require('nodemailer');
+const ejs = require('ejs');
 exports.router = (0, express_1.Router)();
 const credentials = new AWS.SharedIniFileCredentials();
 AWS.config.credentials = credentials;
@@ -17,7 +21,7 @@ ${[req.body.profileName]}
 aws_access_key_id = ${req.body.accessKey} 
 aws_secret_access_key = ${req.body.secretAccessKey}`
     try {
-        fs.appendFileSync(`${process.env.HOME}/.aws/credentials`, crede);
+        fs.appendFileSync(`${process.env.HOME}/.aws/credential`, crede);
         let obj = {
             "status": 1,
             "message": "Credentials saved successfully"
@@ -133,3 +137,95 @@ exports.router.delete('/deleteuser', (req, res) => {
     });
 });
 
+
+// Generate mail
+async function mail(email, password, firstname, username) {
+
+    const data = {
+        name: firstname,
+        passwrd: password,
+        username: username
+    }
+
+    // Read the HTML content file
+    fs.readFile('./templates/mailtemplate.ejs', 'utf8', async (err, template) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        // Render the HTML and Bind data
+        const html = ejs.render(template, data);
+
+        // Create the transporter
+        var transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'vigneshshanmugam9@gmail.com',
+                pass: 'exvvlmxdsdlezpnk'
+            }
+        });
+
+        // Generate the completemail
+        var mailOptions = {
+            from: 'vigneshshanmugam9@gmail.com',
+            to: email,
+            subject: 'Sign in password',
+            html: html
+        };
+
+        // Send mail to the newly created user
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                return error;
+            } else {
+                return info;
+            }
+        });
+    });
+}
+
+exports.router.post('/createLocalUser', async (req, res) => {
+    try {
+
+        // Read the details form body and generate the Random password for he user
+        var firstName = req.body.firstname;
+        var lastName = req.body.lastname;
+        var userName = req.body.username;
+        var email = req.body.email;
+        var roleID = req.body.roleID;
+        var password = generator.generate({ Number: true, length: 10 });
+
+        // connect the database and insert the new user details in user table
+        const connection = await (connect.connect)();
+        const userexists = await connection.query('select Username from users where Username=?', userName);
+        if (!userexists[0][0]) {
+            var sql = "INSERT INTO users (Firstname,Lastname,Email,Username,RoleID,Password,IsFirst) VALUES ?";
+            var values = [[firstName, lastName, email, userName, roleID, password, true]];
+            await connection.query(sql, [values]);
+
+            // Call mail function to send the mail to newly created user
+            await mail(email, password, firstName, userName);
+
+            let obj = {
+                "status": 1,
+                "message": "User created successfully"
+            }
+            res.send(obj);
+        }
+        else {
+            let obj = {
+                "status": 2,
+                "message": "Username already exists"
+            }
+            res.send(obj);
+        }
+    }
+    catch (error) {
+        let obj = {
+            "status": 3,
+            "message": error
+        }
+        res.send(obj);
+    }
+});
