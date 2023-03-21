@@ -229,3 +229,77 @@ exports.router.post('/createLocalUser', async (req, res) => {
         res.send(obj);
     }
 });
+
+// Delete local user
+exports.router.delete('/deleteLocalUser', async (req, res) => {
+    const ID = req.body.id;
+    const userName = req.body.username;
+
+    const connection = await (connect.connect)();
+    var sql = "delete from cloudshare.users where Id=? and Username=?";
+    var values = [ID, userName];
+    const deleteUser = await connection.query(sql, values);
+    if (deleteUser[0].affectedRows === 0) {
+        let obj = {
+            "status": 2,
+            "message": "Failed to delete user"
+        }
+        res.send(obj);
+    }
+    else {
+        let obj = {
+            "status": 1,
+            "message": "User deleted successfully"
+        }
+        res.send(obj);
+    }
+});
+
+// Update local user
+exports.router.put('/updateLocalUser', async (req, res) => {
+    var firstName = req.body.firstname;
+    var lastName = req.body.lastname;
+    var userName = req.body.username;
+    var email = req.body.email;
+    var roleID = req.body.roleID;
+
+    const connection = await (connect.connect)();
+    var sql = "update cloudshare.users set Firstname=?,Lastname=?,Email=?,RoleID=? where Username=?";
+    var values = [firstName, lastName, email, roleID, userName];
+    const updateUser = await connection.query(sql, values);
+    if (updateUser[0].affectedRows === 0) {
+        let obj = {
+            "status": 2,
+            "message": "Failed to Update user"
+        }
+        res.send(obj);
+    }
+    else {
+        let obj = {
+            "status": 1,
+            "message": "Updated successfully"
+        }
+        res.send(obj);
+    }
+});
+
+// List all locally created users
+exports.router.get('/listLocalUsers', async (reqq, res) => {
+    var sql = "select users.*,role.Role from users inner join role on role.ID = users.RoleID ";
+    const connection = await (connect.connect)();
+    const listUser = await connection.query(sql);
+    if (listUser[0]) {
+        let obj = {
+            "status": 1,
+            "users": listUser[0]
+        }
+        res.send(obj);
+    }
+    else {
+        let obj = {
+            "status": 2,
+            "users": "Failed to get users"
+        }
+        res.send(obj);
+    }
+});
