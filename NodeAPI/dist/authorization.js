@@ -270,7 +270,7 @@ exports.router.put('/updateLocalUser', async (req, res) => {
     if (updateUser[0].affectedRows === 0) {
         let obj = {
             "status": 2,
-            "message": "Failed to Update user"
+            "message": "Failed to update user"
         }
         res.send(obj);
     }
