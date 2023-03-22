@@ -17,7 +17,7 @@ exports.router = (0, express_1.Router)();
 exports.router.get('/getUser', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const values = yield (0, dbconnection_1.connect)();
-        const allUsers = yield values.query('select * from newdb.users');
+        const allUsers = yield values.query('select * from cloudshare.users');
         return res.status(200).json(allUsers[0]);
     }
     catch (error) {
@@ -43,7 +43,7 @@ exports.router.post('/verifyUser', (req, res) => __awaiter(void 0, void 0, void 
         const password = payload.Password;
         const roleID = payload.RoleID;
         const values = yield (0, dbconnection_1.connect)();
-        const user = yield values.query('select users.*,role.Role from users inner join role on role.ID = users.RoleID where users.Name = ? and users.Password = ? and users.RoleID = ?', [name, password, roleID]);
+        const user = yield values.query('select users.*,role.Role from users inner join role on role.ID = users.RoleID where users.Username = ? and users.Password = ? and users.RoleID = ?', [name, password, roleID]);
         // array of array of user 
         let userDetails = user[0][0];
         //console.log("newValue====>>  ",userDetails);   -- This is for reference while doing console log

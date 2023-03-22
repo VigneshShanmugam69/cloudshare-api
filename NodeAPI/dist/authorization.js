@@ -284,7 +284,7 @@ exports.router.put('/updateLocalUser', async (req, res) => {
 });
 
 // List all locally created users
-exports.router.get('/listLocalUsers', async (reqq, res) => {
+exports.router.get('/listLocalUsers', async (req, res) => {
     var sql = "select users.*,role.Role from users inner join role on role.ID = users.RoleID ";
     const connection = await (connect.connect)();
     const listUser = await connection.query(sql);
@@ -301,5 +301,37 @@ exports.router.get('/listLocalUsers', async (reqq, res) => {
             "users": "Failed to get users"
         }
         res.send(obj);
+    }
+});
+
+exports.router.put('/resetPasswordByFirstLogin', async (req, res) => 
+{
+    try
+    {
+        const {Username,Password} = req.body;
+        var query = "update cloudshare.users set Password=?,IsFirst=? where Username=?";
+        var values = [Password,false,Username]
+        const connection = await (connect.connect)();
+        const result = await connection.query(query,values);
+        if (result[0].affectedRows == 1)
+        {
+            let obj = {
+                "status": 1,
+                "users": "Password updated successfully"
+            }
+            res.send(obj);
+        }
+        else 
+        {
+            let obj = {
+                "status": 2,
+                "users": "Update failed"
+            }
+            res.send(obj);
+        }
+    }
+    catch(err)
+    {
+        res.status(500).send(err);
     }
 });
