@@ -103,7 +103,7 @@ function gettotalfolder() {
        else
         {
         resolve(` ${data.CommonPrefixes.length}`);
-
+        
       }
     });
 
@@ -171,7 +171,7 @@ function getBucketVersionig() {
       else 
       {
         
-        resolve({ data });
+        resolve({ data});
       }
     });
   }
@@ -224,7 +224,7 @@ s3.getBucketRequestPayment(params, (err, data) => {
       } 
       else 
       {
-        const requesterPays = data.Payer === 'Requester';
+        const requesterPays = data.Payer=== 'Requester';
         resolve(requesterPays);
       }
     });
@@ -312,7 +312,7 @@ return new Promise((resolve, reject) => {
       } 
       else 
       {
-       resolve(data);
+       resolve(data.ReplicationConfiguration);
       }
     });
   }
