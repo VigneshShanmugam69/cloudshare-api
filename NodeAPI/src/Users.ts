@@ -7,7 +7,7 @@ export const router: Router = Router();
 router.get('/getUser', async (req: Request, res: Response) => {
     try {
         const values = await connect();
-        const allUsers = await values.query('select * from cloudshare.users');
+        const allUsers = await values.query('select * from newdb.users');
         return res.status(200).json(allUsers[0]);
 
     }
@@ -35,7 +35,7 @@ router.post('/verifyUser', async (req: Request, res: Response) => {
         const password = payload.Password;
         const roleID = payload.RoleID;
         const values = await connect();
-        const user = await values.query('select users.*,role.Role from users inner join role on role.ID = users.RoleID where users.Username = ? and users.Password = ? and users.RoleID = ?', [name, password, roleID]);
+        const user = await values.query('select users.*,role.Role from users inner join role on role.ID = users.RoleID where users.Name = ? and users.Password = ? and users.RoleID = ?', [name, password, roleID]);
 
         // array of array of user 
         let userDetails = user[0][0];

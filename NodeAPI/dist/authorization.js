@@ -5,6 +5,8 @@ const generator = require('generate-password');
 const connect = require('./dbconnection');
 const nodemailer = require('nodemailer');
 const ejs = require('ejs');
+const keytar = require('keytar');
+const okta = require('@okta/okta-sdk-nodejs');
 exports.router = (0, express_1.Router)();
 const credentials = new AWS.SharedIniFileCredentials();
 AWS.config.credentials = credentials;
@@ -317,7 +319,7 @@ exports.router.put('/resetPasswordByFirstLogin', async (req, res) =>
         {
             let obj = {
                 "status": 1,
-                "users": "Password updated successfully"
+                "message": "Password updated successfully"
             }
             res.send(obj);
         }
@@ -325,7 +327,7 @@ exports.router.put('/resetPasswordByFirstLogin', async (req, res) =>
         {
             let obj = {
                 "status": 2,
-                "users": "Update failed"
+                "message": "Update failed"
             }
             res.send(obj);
         }
@@ -335,3 +337,4 @@ exports.router.put('/resetPasswordByFirstLogin', async (req, res) =>
         res.status(500).send(err);
     }
 });
+
