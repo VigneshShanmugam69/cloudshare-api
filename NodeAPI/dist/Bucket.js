@@ -26,7 +26,7 @@ const control = new s3control.S3ControlClient({
     }
 });
 
-// ========listbuckets========
+// listbuckets
 exports.router.get('/listbuckets', async (req, res) => {
     const command = new s3Conn.ListBucketsCommand({});
 
@@ -39,8 +39,8 @@ exports.router.get('/listbuckets', async (req, res) => {
 });
 
 
-// =========create bucket======
-exports.router.get('/createbucket', async (req, res) => {
+// create bucket
+exports.router.post('/createbucket', async (req, res) => {
     const payload = req.body;
     const command = new s3Conn.CreateBucketCommand({
         Bucket: payload.Bucket
@@ -56,8 +56,8 @@ exports.router.get('/createbucket', async (req, res) => {
 });
 
 
-// ======delete bucket=======
-exports.router.get('/deletebucket', async (req, res) => {
+// delete bucket
+exports.router.post('/deletebucket', async (req, res) => {
     const payload = req.body;
     const command = new s3Conn.DeleteBucketCommand({
         Bucket: payload.Bucket
@@ -72,9 +72,9 @@ exports.router.get('/deletebucket', async (req, res) => {
 
 });
 
-//====== Buckettags======= 
+// Buckettags 
 
-exports.router.get('/buckettags', async (req, res) => {
+exports.router.post('/buckettags', async (req, res) => {
     // async function name(){
     const payload = req.body;
     const input = {
@@ -112,9 +112,9 @@ exports.router.get('/buckettags', async (req, res) => {
 
 
 
-//========= Buckettags ========= 
+// Bucket Permissions  
 
-exports.router.get('/bucketPermissions', async (req, res) => {
+exports.router.post('/bucketPermissions', async (req, res) => {
     const payload = req.body;
     const input = {
         "Bucket": payload.Bucket
@@ -131,9 +131,9 @@ exports.router.get('/bucketPermissions', async (req, res) => {
 
 });
 
-//======= Bucket Versions ========
+// Bucket Versions 
 
-exports.router.get('/bucketVersions', async (req, res) => {
+exports.router.post('/bucketVersions', async (req, res) => {
     const payload = req.body;
     const input = {
         "Bucket": payload.Bucket
@@ -150,7 +150,7 @@ exports.router.get('/bucketVersions', async (req, res) => {
 
 });
 
-// ======Bucket Headers =====
+// Bucket Headers 
 
 exports.router.post('/bucketHeaders', async (req, res) => {
     const payload = req.body;
@@ -158,13 +158,13 @@ exports.router.post('/bucketHeaders', async (req, res) => {
     const region = await Region(payload.Bucket);
     // const contenttype = await ContentType(payload.Bucket);
     const accesspoint = await AccessPoint(payload.AccountId, payload.Name)
-    res.send({ headers, region,  accesspoint })
+    res.send({ headers, region, accesspoint })
 
 
 });
 
 
-// ====requestId ======
+// requestId 
 
 
 function requestId(bucketName) {
@@ -173,15 +173,15 @@ function requestId(bucketName) {
         try {
             const command = new s3Conn.HeadBucketCommand(input);
             const response = await client.send(command);
-            var date_time =new Date();
+            var date_time = new Date();
             var date = date_time.toGMTString()
             const obj = {
                 'httpStatusCode': response.$metadata.httpStatusCode,
                 'x-amz-id-2': response.$metadata.extendedRequestId,
                 // extendedRequestId (or) id 2:76 (letters+numbers),requestId : 17(letters+numbers)
                 'x-amz-request-id': response.$metadata.requestId,
-                'Date':date
-                
+                'Date': date
+
 
             }
             resolve(obj);
@@ -192,7 +192,7 @@ function requestId(bucketName) {
     })
 };
 
-// =========region=====
+// region
 
 function Region(bucketName) {
     return new Promise(async (resolve, reject) => {
@@ -221,7 +221,7 @@ function Region(bucketName) {
 
 
 
-// ====AccessPointAlias=====
+// AccessPointAlias
 
 function AccessPoint(accountId, accessPointName) {
     return new Promise(async (resolve, reject) => {
@@ -250,8 +250,23 @@ function AccessPoint(accountId, accessPointName) {
 
 }
 
-//  =========bucketPolicyStatus===//know the bucket public access or private access===
+// bucketPolicyStatus to know the bucket is public access or private access
 
+exports.router.post('/bucketPolicyStatus', async (req, res) => {
+    const payload = req.body;
+    const input = {
+        "Bucket": payload.Bucket
+
+    }
+    try {
+        const command = new s3Conn.GetBucketPolicyStatusCommand(input);
+        const response = await client.send(command);
+        // const policyStatus = response.PolicyStatus.IsPublic ?response.PolicyStatus.IsPublic.BlockPublicAcls:false;
+        res.send(response)
+    } catch (err) {
+        res.send(err);
+    }
+})
 
 
 
