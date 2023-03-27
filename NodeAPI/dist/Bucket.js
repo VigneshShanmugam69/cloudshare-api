@@ -1,8 +1,8 @@
 //import express from "express";
 
-const express_1 = require("express");
-const dbconnection_1 = require("./dbconnection");
-exports.router = (0, express_1.Router)();
+const express = require("express");
+const dbconnection = require("./dbconnection");
+exports.router = (0, express.Router)();
 const s3Conn = require("@aws-sdk/client-s3");
 const { createScanner } = require("typescript");
 const s3control = require("@aws-sdk/client-s3-control")
@@ -263,6 +263,27 @@ exports.router.post('/bucketPolicyStatus', async (req, res) => {
         const response = await client.send(command);
         // const policyStatus = response.PolicyStatus.IsPublic ?response.PolicyStatus.IsPublic.BlockPublicAcls:false;
         res.send(response)
+    } catch (err) {
+        res.send(err);
+    }
+})
+
+// object ownership (To find the owner of the object in the bucket)
+
+
+exports.router.post('/objectownership', async (req, res) => {
+    const payload = req.body;
+    const input = {
+        "Bucket": payload.Bucket
+
+    }
+    try {
+        const command = new s3Conn.GetBucketOwnershipControlsCommand(input);
+        const response = await client.send(command);
+        const obj = {
+            ObjectOwnership : response.OwnershipControls.Rules
+        }
+        res.send(obj)
     } catch (err) {
         res.send(err);
     }
