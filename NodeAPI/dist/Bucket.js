@@ -93,24 +93,6 @@ exports.router.post('/buckettags', async (req, res) => {
 
 });
 
-// // ======cross region=====
-// exports.router.get('/crossRegion', async (req, res) => {
-
-//     const input = {
-//         "Bucket": "cloudstier-gkumar-demo-001"
-//     }
-//     const command = new s3Conn.GetBucketCorsCommand(input);
-//     try {
-//         const response = await client.send(command);
-//         res.send(response);
-//     } catch (err) {
-//         console.error(err);
-//     }
-
-// }) ;   
-
-
-
 
 // Bucket Permissions  
 
@@ -281,7 +263,7 @@ exports.router.post('/objectownership', async (req, res) => {
         const command = new s3Conn.GetBucketOwnershipControlsCommand(input);
         const response = await client.send(command);
         const obj = {
-            ObjectOwnership : response.OwnershipControls.Rules
+            ObjectOwnership: response.OwnershipControls.Rules
         }
         res.send(obj)
     } catch (err) {
@@ -289,6 +271,23 @@ exports.router.post('/objectownership', async (req, res) => {
     }
 })
 
+//cross origin
+exports.router.post('/crossOrigin', async (req, res) => {
+    const payload = req.body;
+    const input ={
+        Bucket : payload.Bucket
+    }
+
+    const command = new s3Conn.GetBucketCorsCommand(input);
+    try {
+        const response = await client.send(command);
+        // response.CORSRules
+        res.send(response);
+    } catch (err) {
+        res.send(err);
+    }
+
+});
 
 
 
