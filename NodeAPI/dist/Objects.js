@@ -48,11 +48,11 @@
         res.send(err, err.stack);
       } else {
         const objects = data.Contents.map(obj => ({
-          key: obj.Key.split(payload.folderPath)[1], // Split the key by the prefix and take the second element          
-          size: obj.Size,
-          lastModified: obj.LastModified,
-          metadata: obj.Metadata,
-          owner : obj.Owner,
+          Key: obj.Key.split(payload.folderPath)[1], // Split the key by the prefix and take the second element          
+          Size: obj.Size,
+          LastModified: obj.LastModified,
+          Metadata: obj.Metadata,
+          Owner : obj.Owner,
           StorageClass: obj.StorageClass,
           ETag: obj.ETag
         }));
