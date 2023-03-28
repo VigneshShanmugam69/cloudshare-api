@@ -52,6 +52,7 @@
           size: obj.Size,
           lastModified: obj.LastModified,
           metadata: obj.Metadata,
+          owner : obj.Owner,
           StorageClass: obj.StorageClass,
           ETag: obj.ETag
         }));
@@ -143,6 +144,38 @@
     });
   });
 
+  // Object Headers
+  exports.router.post('/getHeadObjects', async (req, res) => {
+    const payload = req.body;
+    const params = {
+      Bucket : payload.Bucket,
+      Key : payload.Key
+    };
+    s3.headObject(params, function(err, data) {
+      if (err) {
+        res.send(err, err.stack); 
+      }
+      else {
+        res.send(data);         
+      }    
+    });
+  })
+
+  // To Get Access Control List for Objects.
+  exports.router.post('/getAccessControlList', async (req, res) =>{
+    const payload = req.body;
+    const params = {
+      Bucket : payload.Bucket,
+      Key : payload.Key
+    };
+    s3.getObjectAcl(params, function(err, data) {
+      if (err) {
+        res.send(err, err.stack); 
+      } else {
+        res.send(data);   
+      }           
+    });
+  })
 
   //Delete single object
   exports.router.get('/deleteObject', async (req, res) => {
