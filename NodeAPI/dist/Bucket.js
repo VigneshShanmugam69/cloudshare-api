@@ -306,11 +306,11 @@ exports.router.post('/objectVersions', async (req, res) => {
         const response = await client.send(command);
 
         const versions = response.Versions;
-        const count = versions.length;
+        const versionsCount = versions.length;
 
 
         const deletemarkers = response.DeleteMarkers;
-        const count1 = deletemarkers.length;
+        const deletemarkersCount= deletemarkers.length;
 
         // const date =new Date();
         // const Date = date.getUTCSeconds()
@@ -325,9 +325,9 @@ exports.router.post('/objectVersions', async (req, res) => {
         }
 
 
-        const value = [];
+        const versionsList = [];
         let i = 0;
-        while (i < count) {
+        while (i < versionsCount) {
             const Size = formatSizeUnits(versions[i].Size);
             const LastModified = versions[i].LastModified.toUTCString();
             const ETag = versions[i].ETag;
@@ -337,7 +337,7 @@ exports.router.post('/objectVersions', async (req, res) => {
             const Owner = (`${Name}(${Id})`);
             const Versionid = versions[i].VersionId;
             const IsLatest = versions[i].IsLatest
-            value.push({
+            versionsList.push({
                 LastModified,
                 ETag,
                 Size,
@@ -349,14 +349,14 @@ exports.router.post('/objectVersions', async (req, res) => {
             i++;
         }
 
-        const value1 = [];
+        const deletemarkersList = [];
         let j = 0;
-        while (j < count1) {
+        while (j < deletemarkersCount) {
             const LastModified = deletemarkers[j].LastModified;
             const Name = deletemarkers[j].Owner.DisplayName;
             const Id = deletemarkers[j].Owner.ID;
             const Owner = `${Name}(${Id})`;
-            value1.push({
+            deletemarkersList.push({
                 LastModified,
                 Owner
             });
@@ -364,8 +364,8 @@ exports.router.post('/objectVersions', async (req, res) => {
         }
         let result = {
             Key: response.Versions[0].Key,
-            Versions: value,
-            DeleteMarkers: value1
+            Versions: versionsList,
+            DeleteMarkers: deletemarkersList
 
         }
         res.send(result);
