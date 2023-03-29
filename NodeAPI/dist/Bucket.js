@@ -132,6 +132,7 @@ exports.router.post('/bucketVersions', async (req, res) => {
 
 });
 
+
 // Bucket Headers 
 
 exports.router.post('/bucketHeaders', async (req, res) => {
@@ -156,7 +157,8 @@ function requestId(bucketName) {
             const command = new s3Conn.HeadBucketCommand(input);
             const response = await client.send(command);
             var date_time = new Date();
-            var date = date_time.toGMTString()
+            var date = date_time.toUTCString()
+            // toGMTString,toISOString
             const obj = {
                 'httpStatusCode': response.$metadata.httpStatusCode,
                 'x-amz-id-2': response.$metadata.extendedRequestId,
@@ -274,8 +276,8 @@ exports.router.post('/objectownership', async (req, res) => {
 //cross origin
 exports.router.post('/crossOrigin', async (req, res) => {
     const payload = req.body;
-    const input ={
-        Bucket : payload.Bucket
+    const input = {
+        Bucket: payload.Bucket
     }
 
     const command = new s3Conn.GetBucketCorsCommand(input);
@@ -290,6 +292,90 @@ exports.router.post('/crossOrigin', async (req, res) => {
 });
 
 
+// object Versions
+
+exports.router.post('/objectVersions', async (req, res) => {
+    const payload = req.body;
+    const input = {
+        "Bucket": payload.Bucket,
+        "Prefix": payload.Key
+
+    }
+    try {
+        const command = new s3Conn.ListObjectVersionsCommand(input);
+        const response = await client.send(command);
+
+        const versions = response.Versions;
+        const versionsCount = versions.length;
+
+
+        const deletemarkers = response.DeleteMarkers;
+        const deletemarkersCount= deletemarkers.length;
+
+        // const date =new Date();
+        // const Date = date.getUTCSeconds()
+        function formatSizeUnits(bytes) {
+            const units = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+            let index = 0;
+            while (bytes >= 1024) {
+                bytes /= 1024;
+                index++;
+            }
+            return `${parseFloat(bytes.toFixed(2))} ${units[index]}`;
+        }
+
+
+        const versionsList = [];
+        let i = 0;
+        while (i < versionsCount) {
+            const Size = formatSizeUnits(versions[i].Size);
+            const LastModified = versions[i].LastModified.toUTCString();
+            const ETag = versions[i].ETag;
+            const StorageClass = versions[i].StorageClass;
+            const Name = versions[i].Owner.DisplayName;
+            const Id = versions[i].Owner.ID;
+            const Owner = (`${Name}(${Id})`);
+            const Versionid = versions[i].VersionId;
+            const IsLatest = versions[i].IsLatest
+            versionsList.push({
+                LastModified,
+                ETag,
+                Size,
+                StorageClass,
+                Owner,
+                Versionid,
+                IsLatest
+            });
+            i++;
+        }
+
+        const deletemarkersList = [];
+        let j = 0;
+        while (j < deletemarkersCount) {
+            const LastModified = deletemarkers[j].LastModified;
+            const Name = deletemarkers[j].Owner.DisplayName;
+            const Id = deletemarkers[j].Owner.ID;
+            const Owner = `${Name}(${Id})`;
+            deletemarkersList.push({
+                LastModified,
+                Owner
+            });
+            j++;
+        }
+        let result = {
+            Key: response.Versions[0].Key,
+            Versions: versionsList,
+            DeleteMarkers: deletemarkersList
+
+        }
+        res.send(result);
+
+    } catch (err) {
+        res.send(err);
+    }
+
+
+});
 
 
 
