@@ -177,6 +177,42 @@
     });
   })
 
+  // To retrieve tag set of an object
+  exports.router.post('/getObjectTag', async (req, res) => {
+    const payload = req.body;
+    const params = {
+      Bucket : payload.Bucket,
+      Key : payload.Key,
+    };
+    s3.getObjectTagging(params, (err, data) =>{
+      if (err){
+        res.send(err, err.stack);
+      } else {        
+         const tagSet = data.TagSet
+         if (Array.isArray(tagSet) && tagSet.length)
+          {
+            res.send({Result: tagSet});            
+          }
+          else{
+            res.send ({Result: 'No tags associated with this resource.'});
+          }      
+        }
+    });
+  })
+
+  // To get Object URL
+  exports.router.post('/getObjectURL', async (req, res) => {
+    const payload = req.body
+    const params = {
+      Bucket: payload.Bucket,
+      Key: payload.Key
+    };
+    const url = s3.getSignedUrl('getObject', params);
+    const newUrl = url.split('?')[0];
+    res.send(newUrl);
+  });
+
+  
   //Delete single object
   exports.router.get('/deleteObject', async (req, res) => {
     const payload = req.body;
