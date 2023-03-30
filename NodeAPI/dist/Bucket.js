@@ -83,11 +83,16 @@ exports.router.post('/buckettags', async (req, res) => {
     const command = new s3Conn.GetBucketTaggingCommand(input);
     try {
         const response = await client.send(command);
-        // console.log(response);
-        res.send(response);
+        let obj = {
+            TagSet: response.TagSet
+        }
+        res.send(obj);
 
     } catch (err) {
-        res.send(err);
+        let obj = {
+            TagSet: err.Code
+        }
+        res.send({ Result: [obj] });
 
     }
 
@@ -105,9 +110,24 @@ exports.router.post('/bucketPermissions', async (req, res) => {
     try {
         const command = new s3Conn.GetBucketAclCommand(input);
         const response = await client.send(command);
-        res.send(response);
+        // let obj = {
+        //     "Owner": response.Grants[0].Grantee.DisplayName,
+        //     "ID": response.Grants[0].Grantee.ID,
+        //     "OwnerPermission": response.Grants[0].Permission,
+        //     "OwnerType": response.Grants[0].Grantee.Type,
+        //     "UserType": response.Grants[1].Grantee.Type,
+        // "UserPermissions": response.Grants[1].Permission + "," + response.Grants[2].Permission
+        // };
+        // res.send({ Result: obj });
+        let result = {
+            Grants: response.Grants
+        }
+        res.send(result);
     } catch (err) {
-        res.send(err);
+        let obj = {
+            Error: err.Code
+        }
+        res.send(obj);
     }
 
 
@@ -136,13 +156,16 @@ exports.router.post('/bucketVersions', async (req, res) => {
 // Bucket Headers 
 
 exports.router.post('/bucketHeaders', async (req, res) => {
-    const payload = req.body;
-    const headers = await requestId(payload.Bucket);
-    const region = await Region(payload.Bucket);
-    // const contenttype = await ContentType(payload.Bucket);
-    const accesspoint = await AccessPoint(payload.AccountId, payload.Name)
-    res.send({ headers, region, accesspoint })
-
+    try {
+        const payload = req.body;
+        const headers = await requestId(payload.Bucket);
+        const region = await Region(payload.Bucket);
+        // const contenttype = await ContentType(payload.Bucket);
+        const accesspoint = await AccessPoint(payload.AccountId, payload.Name)
+        res.send({ Result: [headers, region, accesspoint] })
+    }catch(err){
+        res.send(err);
+    }
 
 });
 
@@ -160,13 +183,10 @@ function requestId(bucketName) {
             var date = date_time.toUTCString()
             // toGMTString,toISOString
             const obj = {
-                'httpStatusCode': response.$metadata.httpStatusCode,
                 'x-amz-id-2': response.$metadata.extendedRequestId,
                 // extendedRequestId (or) id 2:76 (letters+numbers),requestId : 17(letters+numbers)
                 'x-amz-request-id': response.$metadata.requestId,
                 'Date': date
-
-
             }
             resolve(obj);
             // resolve(response);
@@ -246,9 +266,15 @@ exports.router.post('/bucketPolicyStatus', async (req, res) => {
         const command = new s3Conn.GetBucketPolicyStatusCommand(input);
         const response = await client.send(command);
         // const policyStatus = response.PolicyStatus.IsPublic ?response.PolicyStatus.IsPublic.BlockPublicAcls:false;
-        res.send(response)
+        let status = {
+            PolicyStatus: response.PolicyStatus
+        }
+        res.send(status);
     } catch (err) {
-        res.send(err);
+        let obj = {
+            Code: err.Code
+        }
+        res.send({ Result: obj });
     }
 })
 
@@ -269,7 +295,10 @@ exports.router.post('/objectownership', async (req, res) => {
         }
         res.send(obj)
     } catch (err) {
-        res.send(err);
+        let obj = {
+            ObjectOwnerShip: err.Code
+        }
+        res.send({ Result: [obj] });
     }
 })
 
@@ -284,9 +313,15 @@ exports.router.post('/crossOrigin', async (req, res) => {
     try {
         const response = await client.send(command);
         // response.CORSRules
-        res.send(response);
+        let cors = {
+            CORSRules: response.CORSRules
+        }
+        res.send(cors);
     } catch (err) {
-        res.send(err);
+        let obj ={
+          Code:err.Code  
+        }
+        res.send({Result:[obj]});
     }
 
 });
@@ -310,7 +345,7 @@ exports.router.post('/objectVersions', async (req, res) => {
 
 
         const deletemarkers = response.DeleteMarkers;
-        const deletemarkersCount= deletemarkers.length;
+        const deletemarkersCount = deletemarkers.length;
 
         // const date =new Date();
         // const Date = date.getUTCSeconds()
@@ -371,7 +406,7 @@ exports.router.post('/objectVersions', async (req, res) => {
         res.send(result);
 
     } catch (err) {
-        res.send(err);
+        res.send(err.Code);
     }
 
 
