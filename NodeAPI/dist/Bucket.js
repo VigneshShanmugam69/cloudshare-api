@@ -163,7 +163,7 @@ exports.router.post('/bucketHeaders', async (req, res) => {
         // const contenttype = await ContentType(payload.Bucket);
         const accesspoint = await AccessPoint(payload.AccountId, payload.Name)
         res.send({ Result: [headers, region, accesspoint] })
-    }catch(err){
+    } catch (err) {
         res.send(err);
     }
 
@@ -318,10 +318,10 @@ exports.router.post('/crossOrigin', async (req, res) => {
         }
         res.send(cors);
     } catch (err) {
-        let obj ={
-          Code:err.Code  
+        let obj = {
+            Code: err.Code
         }
-        res.send({Result:[obj]});
+        res.send({ Result: [obj] });
     }
 
 });
@@ -363,23 +363,23 @@ exports.router.post('/objectVersions', async (req, res) => {
         const versionsList = [];
         let i = 0;
         while (i < versionsCount) {
-            const Size = formatSizeUnits(versions[i].Size);
-            const LastModified = versions[i].LastModified.toUTCString();
-            const ETag = versions[i].ETag;
-            const StorageClass = versions[i].StorageClass;
-            const Name = versions[i].Owner.DisplayName;
+            const size = formatSizeUnits(versions[i].Size);
+            const lastModified = versions[i].LastModified.toUTCString();
+            const eTag = versions[i].ETag;
+            const storageClass = versions[i].StorageClass;
+            const name = versions[i].Owner.DisplayName;
             const Id = versions[i].Owner.ID;
-            const Owner = (`${Name}(${Id})`);
-            const Versionid = versions[i].VersionId;
-            const IsLatest = versions[i].IsLatest
+            const owner = (`${name}(${Id})`);
+            const versionid = versions[i].VersionId;
+            const isLatest = versions[i].IsLatest
             versionsList.push({
-                LastModified,
-                ETag,
-                Size,
-                StorageClass,
-                Owner,
-                Versionid,
-                IsLatest
+                lastModified,
+                eTag,
+                size,
+                storageClass,
+                owner,
+                versionid,
+                isLatest
             });
             i++;
         }
@@ -387,13 +387,13 @@ exports.router.post('/objectVersions', async (req, res) => {
         const deletemarkersList = [];
         let j = 0;
         while (j < deletemarkersCount) {
-            const LastModified = deletemarkers[j].LastModified.toUTCString();
-            const Name = deletemarkers[j].Owner.DisplayName;
+            const lastModified = deletemarkers[j].LastModified.toUTCString();
+            const name = deletemarkers[j].Owner.DisplayName;
             const Id = deletemarkers[j].Owner.ID;
-            const Owner = `${Name}(${Id})`;
+            const owner = `${name}(${Id})`;
             deletemarkersList.push({
-                LastModified,
-                Owner
+                lastModified,
+                owner
             });
             j++;
         }
@@ -428,14 +428,14 @@ exports.router.post('/copyobject', async (req, res) => {
     try {
         const command = new s3Conn.CopyObjectCommand(parms);
         const response = await client.send(command);
-        var obj ={
-            CopySourceVersionId: response.CopySourceVersionId,
-            VersionId: response.VersionId,
-            ServerSideEncryption: response.ServerSideEncryption,
-            ETag: response.CopyObjectResult.ETag,
-            LastModified: response.CopyObjectResult.LastModified.toUTCString()
+        var obj = {
+            copySourceVersionId: response.CopySourceVersionId,
+            versionId: response.VersionId,
+            serverSideEncryption: response.ServerSideEncryption,
+            eTag: response.CopyObjectResult.ETag,
+            lastModified: response.CopyObjectResult.LastModified.toUTCString()
         }
-        res.send({Result:[obj]});
+        res.send({ Result: [obj] });
     } catch (err) {
         var error = {
             Error: err.Code
