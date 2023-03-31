@@ -387,7 +387,7 @@ exports.router.post('/objectVersions', async (req, res) => {
         const deletemarkersList = [];
         let j = 0;
         while (j < deletemarkersCount) {
-            const LastModified = deletemarkers[j].LastModified;
+            const LastModified = deletemarkers[j].LastModified.toUTCString();
             const Name = deletemarkers[j].Owner.DisplayName;
             const Id = deletemarkers[j].Owner.ID;
             const Owner = `${Name}(${Id})`;
@@ -406,12 +406,45 @@ exports.router.post('/objectVersions', async (req, res) => {
         res.send(result);
 
     } catch (err) {
-        res.send(err.Code);
+        var error = {
+            Error: err.Code
+        }
+        res.send(error);
     }
 
 
 });
 
+// Copy Object from source bucket to the destination bucket
+
+exports.router.post('/copyobject', async (req, res) => {
+    const payload = req.body;
+    const parms = {
+        "Bucket": payload.destinationbucket,
+        "CopySource": payload.sourcebucket,
+        "Key": payload.targetKeyName
+    }
+
+    try {
+        const command = new s3Conn.CopyObjectCommand(parms);
+        const response = await client.send(command);
+        var obj ={
+            CopySourceVersionId: response.CopySourceVersionId,
+            VersionId: response.VersionId,
+            ServerSideEncryption: response.ServerSideEncryption,
+            ETag: response.CopyObjectResult.ETag,
+            LastModified: response.CopyObjectResult.LastModified.toUTCString()
+        }
+        res.send({Result:[obj]});
+    } catch (err) {
+        var error = {
+            Error: err.Code
+        }
+        res.send(error);
+    }
+
+
+});
 
 
 
