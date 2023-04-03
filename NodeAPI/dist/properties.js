@@ -13,22 +13,23 @@ const s3 = new AWS.S3({
   }
 });
 
-const params = {
-  Bucket: 'cloudstier-tgandhi-demo-001',
-
-};
-
-const params1 = {
-  Bucket: 'cloudstier-tgandhi-demo-001',
-  Prefix: '',
-  Delimiter: '/',
-
-};
 
 
 
-exports.router.get('/properties', async (req, res) => {
-
+exports.router.post('/properties', async (req, res) => {
+  //const payload=req.body;
+  const params = {
+    Bucket: req.body.Bucket
+  
+  };
+  
+  const params1 = {
+    Bucket: req.body.Bucket,
+    Prefix: '',
+    Delimiter: '/',
+  
+  }
+  
   const owner = await getBucketAcl();
   const bucketName = await getBucketName();
   const totalFolder = await gettotalfolder();
@@ -49,7 +50,7 @@ exports.router.get('/properties', async (req, res) => {
     owner, bucketName, totalFolder, totalFileSize, bucketLogging, bucketVersion, tranferAcceleration,totalObject,
     serversideEncryption, getBucketRequestPayment,bucketmodificationDate,region,bucketReplication,storageType
   })
-});
+
 
 
  //To get owner of the bucket 
@@ -64,7 +65,7 @@ function getBucketAcl() {
       else 
       {
         const owner = data.Owner;
-        resolve(owner);
+        resolve(owner.DisplayName);
       }
     });
   })
@@ -153,7 +154,7 @@ function getBucketLogging() {
       else 
       {
 
-        resolve(data);
+        resolve(data.LoggingEnabled);
       }
     });
   })
@@ -171,7 +172,7 @@ function getBucketVersionig() {
       else 
       {
         
-        resolve({ data});
+        resolve(data.Status);
       }
     });
   }
@@ -187,7 +188,7 @@ function getBucketAccelerate() {
       if (err) {
         resolve(err);
       } else {
-        resolve(data);
+        resolve(data.Status);
       }
     });
   }
@@ -206,7 +207,7 @@ s3.getBucketEncryption(params, (err, data) => {
       } 
       else 
       {
-        resolve(data.ServerSideEncryptionConfiguration);
+        resolve(data.serversideEncryption[0]);
       }
     });
   }
@@ -352,3 +353,4 @@ function noobj() {
    }
    )
  }
+});

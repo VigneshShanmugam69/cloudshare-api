@@ -101,6 +101,9 @@ exports.router.post('/buckettags', async (req, res) => {
 
 // Bucket Permissions  
 
+// }) ;   
+//========= Buckettags ========= 
+
 exports.router.post('/bucketPermissions', async (req, res) => {
     const payload = req.body;
     const input = {
@@ -110,19 +113,19 @@ exports.router.post('/bucketPermissions', async (req, res) => {
     try {
         const command = new s3Conn.GetBucketAclCommand(input);
         const response = await client.send(command);
-        // let obj = {
-        //     "Owner": response.Grants[0].Grantee.DisplayName,
-        //     "ID": response.Grants[0].Grantee.ID,
-        //     "OwnerPermission": response.Grants[0].Permission,
-        //     "OwnerType": response.Grants[0].Grantee.Type,
-        //     "UserType": response.Grants[1].Grantee.Type,
-        // "UserPermissions": response.Grants[1].Permission + "," + response.Grants[2].Permission
-        // };
-        // res.send({ Result: obj });
-        let result = {
-            Grants: response.Grants
+        let obj = {
+            "Owner": response.Grants[0].Grantee.DisplayName,
+            "ID": response.Grants[0].Grantee.ID,
+            "OwnerPermission": response.Grants[0].Permission,
+            "OwnerType": response.Grants[0].Grantee.Type,
+            "UserType": response.Grants[1].Grantee.Type,
+        "UserPermissions": response.Grants[1].Permission + "," + response.Grants[2].Permission
         }
-        res.send(result);
+         res.send({ Result: obj });
+        // let result = {
+        //     Grants: response.Grants
+        // }
+        // res.send(result);
     } catch (err) {
         let obj = {
             Error: err.Code
@@ -160,10 +163,18 @@ exports.router.post('/bucketHeaders', async (req, res) => {
         const payload = req.body;
         const headers = await requestId(payload.Bucket);
         const region = await Region(payload.Bucket);
-        // const contenttype = await ContentType(payload.Bucket);
-        const accesspoint = await AccessPoint(payload.AccountId, payload.Name)
-        res.send({ Result: [headers, region, accesspoint] })
-    } catch (err) {
+        const accesspoint = await AccessPoint(payload.AccountId, payload.Name);
+        const result = [headers,region,accesspoint]
+        let list = {};
+        for(var i=0; i<result.length;i++)
+        {
+            for(const [key, value] of Object.entries(result[i]))
+            {
+            list[key]=value
+            }
+        }
+        res.send({result :list});
+    }catch(err){
         res.send(err);
     }
 
