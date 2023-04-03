@@ -390,23 +390,23 @@ exports.router.post('/objectVersions', async (req, res) => {
         const versionsList = [];
         let i = 0;
         while (i < versionsCount) {
-            const size = formatSizeUnits(versions[i].Size);
-            const lastModified = versions[i].LastModified.toUTCString();
-            const eTag = versions[i].ETag;
-            const storageClass = versions[i].StorageClass;
-            const name = versions[i].Owner.DisplayName;
+            const Size = formatSizeUnits(versions[i].Size);
+            const LastModified = versions[i].LastModified.toUTCString();
+            const ETag = versions[i].ETag;
+            const StorageClass = versions[i].StorageClass;
+            const Name = versions[i].Owner.DisplayName;
             const Id = versions[i].Owner.ID;
-            const owner = (`${name}(${Id})`);
-            const versionid = versions[i].VersionId;
-            const isLatest = versions[i].IsLatest
+            const Owner = (`${Name}(${Id})`);
+            const Versionid = versions[i].VersionId;
+            const IsLatest = versions[i].IsLatest
             versionsList.push({
-                lastModified,
-                eTag,
-                size,
-                storageClass,
-                owner,
-                versionid,
-                isLatest
+                LastModified,
+                ETag,
+                Size,
+                StorageClass,
+                Owner,
+                Versionid,
+                IsLatest
             });
             i++;
         }
@@ -414,13 +414,13 @@ exports.router.post('/objectVersions', async (req, res) => {
         const deletemarkersList = [];
         let j = 0;
         while (j < deletemarkersCount) {
-            const lastModified = deletemarkers[j].LastModified.toUTCString();
-            const name = deletemarkers[j].Owner.DisplayName;
+            const LastModified = deletemarkers[j].LastModified.toUTCString();
+            const Name = deletemarkers[j].Owner.DisplayName;
             const Id = deletemarkers[j].Owner.ID;
-            const owner = `${name}(${Id})`;
+            const Owner = `${Name}(${Id})`;
             deletemarkersList.push({
-                lastModified,
-                owner
+                LastModified,
+                Owner
             });
             j++;
         }
@@ -456,11 +456,11 @@ exports.router.post('/copyobject', async (req, res) => {
         const command = new s3Conn.CopyObjectCommand(parms);
         const response = await client.send(command);
         var obj = {
-            copySourceVersionId: response.CopySourceVersionId,
-            versionId: response.VersionId,
-            serverSideEncryption: response.ServerSideEncryption,
-            eTag: response.CopyObjectResult.ETag,
-            lastModified: response.CopyObjectResult.LastModified.toUTCString()
+            CopySourceVersionId: response.CopySourceVersionId,
+            VersionId: response.VersionId,
+            ServerSideEncryption: response.ServerSideEncryption,
+            ETag: response.CopyObjectResult.ETag,
+            LastModified: response.CopyObjectResult.LastModified.toUTCString()
         }
         res.send({ Result: [obj] });
     } catch (err) {
