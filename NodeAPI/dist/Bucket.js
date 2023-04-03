@@ -101,6 +101,9 @@ exports.router.post('/buckettags', async (req, res) => {
 
 // Bucket AclPermissions  
 
+// }) ;   
+//========= Buckettags ========= 
+
 exports.router.post('/bucketPermissions', async (req, res) => {
     const payload = req.body;
     const input = {
@@ -187,10 +190,18 @@ exports.router.post('/bucketHeaders', async (req, res) => {
         const payload = req.body;
         const headers = await requestId(payload.Bucket);
         const region = await Region(payload.Bucket);
-        // const contenttype = await ContentType(payload.Bucket);
-        const accesspoint = await AccessPoint(payload.AccountId, payload.Name)
-        res.send({ Result: [headers, region, accesspoint] })
-    } catch (err) {
+        const accesspoint = await AccessPoint(payload.AccountId, payload.Name);
+        const result = [headers,region,accesspoint]
+        let list = {};
+        for(var i=0; i<result.length;i++)
+        {
+            for(const [key, value] of Object.entries(result[i]))
+            {
+            list[key]=value
+            }
+        }
+        res.send({result :list});
+    }catch(err){
         res.send(err);
     }
 
