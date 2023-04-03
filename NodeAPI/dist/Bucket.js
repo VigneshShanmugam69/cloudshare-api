@@ -99,7 +99,7 @@ exports.router.post('/buckettags', async (req, res) => {
 });
 
 
-// Bucket Permissions  
+// Bucket AclPermissions  
 
 exports.router.post('/bucketPermissions', async (req, res) => {
     const payload = req.body;
@@ -110,19 +110,46 @@ exports.router.post('/bucketPermissions', async (req, res) => {
     try {
         const command = new s3Conn.GetBucketAclCommand(input);
         const response = await client.send(command);
-        // let obj = {
-        //     "Owner": response.Grants[0].Grantee.DisplayName,
-        //     "ID": response.Grants[0].Grantee.ID,
-        //     "OwnerPermission": response.Grants[0].Permission,
-        //     "OwnerType": response.Grants[0].Grantee.Type,
-        //     "UserType": response.Grants[1].Grantee.Type,
-        // "UserPermissions": response.Grants[1].Permission + "," + response.Grants[2].Permission
-        // };
-        // res.send({ Result: obj });
-        let result = {
-            Grants: response.Grants
+        var length = response.Grants.length;
+       
+        if (length == 1) {
+            let obj = {
+                "Owner": response.Grants[0].Grantee.DisplayName,
+                "ID": response.Grants[0].Grantee.ID,
+                "OwnerPermission": response.Grants[0].Permission,
+                "OwnerType": response.Grants[0].Grantee.Type
+               
+            };
+
+            res.send(obj);
         }
-        res.send(result);
+        else if (length == 2) {
+            let obj = {
+                "Owner": response.Grants[0].Grantee.DisplayName,
+                "ID": response.Grants[0].Grantee.ID,
+                "OwnerPermission": response.Grants[0].Permission,
+                "OwnerType": response.Grants[0].Grantee.Type,
+                "UserType": response.Grants[0].Grantee.Type,
+                "UserPermissions": response.Grants[1].Permission 
+
+            };
+            res.send(obj);
+        }
+
+        else {
+            let obj = {
+                "Owner": response.Grants[0].Grantee.DisplayName,
+                "ID": response.Grants[0].Grantee.ID,
+                "OwnerPermission": response.Grants[0].Permission,
+                "OwnerType": response.Grants[0].Grantee.Type,
+                "UserType": response.Grants[0].Grantee.Type,
+                "UserPermissions": response.Grants[1].Permission + "," + response.Grants[2].Permission
+            };
+
+            res.send(obj);
+
+        }
+      
     } catch (err) {
         let obj = {
             Error: err.Code
