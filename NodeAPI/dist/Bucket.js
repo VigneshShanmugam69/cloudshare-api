@@ -84,13 +84,13 @@ exports.router.post('/buckettags', async (req, res) => {
     try {
         const response = await client.send(command);
         let obj = {
-            TagSet: response.TagSet
+           Result: response.TagSet
         }
         res.send(obj);
 
     } catch (err) {
         let obj = {
-            TagSet: err.Code
+           Error: err.Code
         }
         res.send({ Result: [obj] });
 
@@ -124,7 +124,7 @@ exports.router.post('/bucketPermissions', async (req, res) => {
                
             };
 
-            res.send(obj);
+            res.send({Result:[obj]});
         }
         else if (length == 2) {
             let obj = {
@@ -136,7 +136,7 @@ exports.router.post('/bucketPermissions', async (req, res) => {
                 "UserPermissions": response.Grants[1].Permission 
 
             };
-            res.send(obj);
+            res.send({Result:[obj]});
         }
 
         else {
@@ -149,7 +149,7 @@ exports.router.post('/bucketPermissions', async (req, res) => {
                 "UserPermissions": response.Grants[1].Permission + "," + response.Grants[2].Permission
             };
 
-            res.send(obj);
+            res.send({Result:[obj]});
 
         }
       
@@ -157,7 +157,7 @@ exports.router.post('/bucketPermissions', async (req, res) => {
         let obj = {
             Error: err.Code
         }
-        res.send(obj);
+        res.send({Result:[obj]});
     }
 
 
@@ -189,6 +189,15 @@ exports.router.post('/bucketHeaders', async (req, res) => {
     try {
         const payload = req.body;
         const headers = await requestId(payload.Bucket);
+        if(headers?.$metadata?.httpStatusCode > 300){
+            let obj = {
+                Error: "The Bucket not found"
+
+            }
+            res.send({Result:[obj] })
+                
+           
+        }
         const region = await Region(payload.Bucket);
         const accesspoint = await AccessPoint(payload.AccountId, payload.Name);
         const result = [headers,region,accesspoint]
@@ -200,11 +209,13 @@ exports.router.post('/bucketHeaders', async (req, res) => {
             list[key]=value
             }
         }
-        res.send({result :list});
-    }catch(err){
-        res.send(err);
+        res.send({Result :list});
+    }catch (err) {
+        let obj = {
+            Error: err.Code
+        }
+        res.send({Result:[obj]});
     }
-
 });
 
 
@@ -305,12 +316,12 @@ exports.router.post('/bucketPolicyStatus', async (req, res) => {
         const response = await client.send(command);
         // const policyStatus = response.PolicyStatus.IsPublic ?response.PolicyStatus.IsPublic.BlockPublicAcls:false;
         let status = {
-            PolicyStatus: response.PolicyStatus
+            Result: response.PolicyStatus
         }
         res.send(status);
     } catch (err) {
         let obj = {
-            Code: err.Code
+           Error: err.Code
         }
         res.send({ Result: obj });
     }
@@ -329,12 +340,12 @@ exports.router.post('/objectownership', async (req, res) => {
         const command = new s3Conn.GetBucketOwnershipControlsCommand(input);
         const response = await client.send(command);
         const obj = {
-            ObjectOwnership: response.OwnershipControls.Rules
+            Result: response.OwnershipControls.Rules
         }
         res.send(obj)
     } catch (err) {
         let obj = {
-            ObjectOwnerShip: err.Code
+            Error: err.Code
         }
         res.send({ Result: [obj] });
     }
@@ -352,12 +363,12 @@ exports.router.post('/crossOrigin', async (req, res) => {
         const response = await client.send(command);
         // response.CORSRules
         let cors = {
-            CORSRules: response.CORSRules
+            Result: response.CORSRules
         }
         res.send(cors);
     } catch (err) {
         let obj = {
-            Code: err.Code
+            Error: err.Code
         }
         res.send({ Result: [obj] });
     }
@@ -441,13 +452,13 @@ exports.router.post('/objectVersions', async (req, res) => {
             DeleteMarkers: deletemarkersList
 
         }
-        res.send(result);
+        res.send({Result:result});
 
     } catch (err) {
         var error = {
             Error: err.Code
         }
-        res.send(error);
+        res.send({Result:error});
     }
 
 
@@ -478,7 +489,7 @@ exports.router.post('/copyobject', async (req, res) => {
         var error = {
             Error: err.Code
         }
-        res.send(error);
+        res.send({Result:error});
     }
 
 
