@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const user = require("./Users");
 const bucket = require("./bucket");
 const objects = require("./Objects");
+const folders = require("./folders")
 const authorization=require("./authorization");
 const properties=require("./properties");
 const systemWallet = require('./systemwallet');
@@ -15,6 +16,7 @@ app.use(bodyParser.json());
 app.use(user.router);
 app.use(bucket.router);
 app.use(objects.router);
+app.use(folders.router);
 app.use(authorization.router);
 app.use(properties.router);
 app.use(systemWallet.router);
