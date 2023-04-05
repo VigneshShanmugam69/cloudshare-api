@@ -8,6 +8,18 @@
     secretAccessKey: 'TabAtviV5nEXfgoup2FSwHAeB5O4IsLZnJTOTk+B'
   });
 
+
+  // Convert file size B into KB, MB, GB
+  function formatSizeUnits(bytes) {
+    const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    let index = 0;
+    while (bytes >= 1024) {
+      bytes /= 1024;
+      index++;
+    }
+    return `${parseFloat(bytes.toFixed(2))} ${units[index]}`;
+  }   
+
   //List all the objects and folders with in a bucket.
   exports.router.post('/getobjects', (req, res) => {
     const payload = req.body;
@@ -20,17 +32,7 @@
       if (err) {
         res.send(err, err.stack);
       }
-      else {   
-        // Convert file size B into KB, MB, GB
-        function formatSizeUnits(bytes) {
-          const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-          let index = 0;
-          while (bytes >= 1024) {
-            bytes /= 1024;
-            index++;
-          }
-          return `${parseFloat(bytes.toFixed(2))} ${units[index]}`;
-        }      
+      else {                
         const commonPrefixes = data.CommonPrefixes  
         const objects = data.Contents.map(obj => ({
           Key: obj.Key,          
@@ -71,10 +73,24 @@
     };
     s3.headObject(params, function (err, data) {
       if (err) {
-        res.send(err, err.stack);
+        res.send(response.err);
       }
-      else {
-        res.send(data);
+      else {  
+        var date_time = new Date();
+        var date = date_time.toUTCString()         
+        const objects = {
+          AcceptRanges: data.AcceptRanges,
+          LastModified: data.LastModified.toUTCString(),
+          ContentLength: data.ContentLength,
+          ETag: data.ETag,
+          ContentType: data.ContentType,
+          ServerSideEncryption: data.ServerSideEncryption,
+          VersionId: data.VersionId,
+          Date: date,
+          Server: data.Server
+          // RequestID: data.$response.extendedRequestId
+        }    
+        res.send(objects);        
       }
     });
   })
@@ -140,7 +156,7 @@
       if (err) {
         console.error(err);
       } else {
-        const uri = `s3://${payload.bucket}/${payload.key}`;
+        const uri = `s3://${params.bucket}/${params.key}`;
         res.send({ S3URI: uri });
       }
     });
@@ -151,15 +167,24 @@
     const payload = req.body;
     const params = {
       Bucket: payload.bucket,
-      Key: payload.key,
-      Range: "bytes=0-9"
+      Key: payload.key,      
     };
     s3.getObject(params, function(err, data) {
       if (err) {
         res.send(err, err.stack); 
       }
-      else {              
-        res.send(data);       
+      else {            
+        const objects = {
+          Name: params.Key,
+          ETag: data.ETag,
+          ServerSideModified: data.LastModified.toUTCString(),
+          Owner: data.Owner,
+          Size: formatSizeUnits(data.ContentLength),         
+          ServerSideEncryption: data.ServerSideEncryption,
+          StorageClass: data.StorageClass,  
+          Type: data.ContentType        
+        }
+        res.send(objects)
       }   
     });
   });
