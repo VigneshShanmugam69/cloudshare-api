@@ -7,13 +7,11 @@ const nodemailer = require('nodemailer');
 const ejs = require('ejs');
 const keytar = require('keytar');
 const okta = require('@okta/okta-sdk-nodejs');
+const jwt = require('jsonwebtoken');
 exports.router = (0, express_1.Router)();
 const credentials = new AWS.SharedIniFileCredentials();
 AWS.config.credentials = credentials;
 const iamUser = new AWS.IAM();
-
-
-
 
 // Add creadentials to ~/.aws/credential file
 exports.router.post('/addProfiles', (req, res) => {
@@ -286,7 +284,8 @@ exports.router.put('/updateLocalUser', async (req, res) => {
 });
 
 // List all locally created users
-exports.router.get('/listLocalUsers', async (req, res) => {
+exports.router.get('/listLocalUsers', verifyJwtToken, async (req, res) => {
+
     var sql = "select users.*,role.Role from users inner join role on role.ID = users.RoleID ";
     const connection = await (connect.connect)();
     const listUser = await connection.query(sql);
@@ -306,25 +305,21 @@ exports.router.get('/listLocalUsers', async (req, res) => {
     }
 });
 
-exports.router.put('/resetPasswordByFirstLogin', async (req, res) => 
-{
-    try
-    {
-        const {Username,Password} = req.body;
+exports.router.put('/resetPasswordByFirstLogin', async (req, res) => {
+    try {
+        const { Username, Password } = req.body;
         var query = "update cloudshare.users set Password=?,IsFirst=? where Username=?";
-        var values = [Password,false,Username]
+        var values = [Password, false, Username]
         const connection = await (connect.connect)();
-        const result = await connection.query(query,values);
-        if (result[0].affectedRows == 1)
-        {
+        const result = await connection.query(query, values);
+        if (result[0].affectedRows == 1) {
             let obj = {
                 "status": 1,
                 "message": "Password updated successfully"
             }
             res.send(obj);
         }
-        else 
-        {
+        else {
             let obj = {
                 "status": 2,
                 "message": "Update failed"
@@ -332,9 +327,109 @@ exports.router.put('/resetPasswordByFirstLogin', async (req, res) =>
             res.send(obj);
         }
     }
-    catch(err)
-    {
+    catch (err) {
         res.status(500).send(err);
     }
 });
+
+async function authenticateOktaUser(username, password) {
+
+    const authClient = new okta.Client({
+        orgUrl: 'https://dev-70779564.okta.com',
+        token: '009lQeaB5h1DMGLtbuyVMTNfCruR2ABLhgA3lhIkMw'
+    });
+    const createSessionRequest = {
+        username: username,
+        password: password
+    };
+    var authUser = await authClient.createSession(createSessionRequest)
+        .then(session => {
+            return session;
+        })
+        .catch(err => {
+            return false;
+        });
+    if (authUser != false) {
+        var user = await authClient.getUser(authUser.userId);
+        const connection = await (connect.connect)();
+        var query = "select * from cloudshare.users where Email=?";
+        var value = user.profile.email;
+        var localAuth = await connection.query(query, value);
+        var userDetails = localAuth[0][0];
+        if (userDetails) {
+            let currentTime = Date.now(); // convert current time to Unix timestamp in seconds
+            let expiresIn = 3600;  //seconds
+            let userdetails = {
+                "firstName": user.profile.firstName,
+                "lastName": user.profile.lastName,
+                "email": user.profile.email,
+                "userId": user.id,
+                "iat": currentTime,
+                "exp": currentTime + expiresIn,
+            }
+            return { status: 1, userdetails };
+        }
+        else {
+            let obj = {
+                "status": 3,
+                "message": "You are not authorized person"
+            }
+            return obj;
+        }
+    }
+    else {
+        let obj = {
+            "status": 0,
+            "message": "Invalid Credentials"
+        }
+        return obj;
+    }
+}
+
+exports.router.post('/auth', async (req, res) => {
+    var result = await createJwtToken(req.body.Username, req.body.Password);
+    res.send(result);
+});
+exports.router.post('/verifyauth', async (req, res) => {
+    var response = await verifyJwtToken(req);
+    res.send(response);
+});
+
+async function createJwtToken(Username, Password) {
+    var result = await authenticateOktaUser(Username, Password);
+    if (result.status == 1) {
+        const secret_key = 'CloudShare';
+        var token = jwt.sign(result.userdetails, secret_key);
+        let obj = {
+            "status": 1,
+            "message": "Logged in successfully",
+            "token": token
+        }
+        return obj;
+    }
+    else {
+        return result;
+    }
+}
+
+function verifyJwtToken(req, res, next) {
+    const secret_key = 'CloudShare';
+    const bearer = req.headers.token.split(' ')[0];
+    const authToken = req.headers.token.split(' ')[1];
+    if (bearer == "Bearer") {
+        jwt.verify(authToken, secret_key, (err, decodedToken) => {
+            if (err) {
+                res.status(401).send(err.message);
+            }
+            else {
+                //req.user = decodedToken;
+                next();
+            }
+        });
+    }
+    else {
+        res.send("Invalid token");
+    }
+}
+
 
