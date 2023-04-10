@@ -84,13 +84,13 @@ exports.router.post('/buckettags', async (req, res) => {
     try {
         const response = await client.send(command);
         let obj = {
-           Result: response.TagSet
+            Result: response.TagSet
         }
         res.send(obj);
 
     } catch (err) {
         let obj = {
-           Error: err.Code
+            Error: err.Code
         }
         res.send({ Result: [obj] });
 
@@ -99,69 +99,7 @@ exports.router.post('/buckettags', async (req, res) => {
 });
 
 
-// Bucket AclPermissions  
 
-// }) ;   
-//========= Buckettags ========= 
-
-exports.router.post('/bucketPermissions', async (req, res) => {
-    const payload = req.body;
-    const input = {
-        "Bucket": payload.Bucket
-
-    }
-    try {
-        const command = new s3Conn.GetBucketAclCommand(input);
-        const response = await client.send(command);
-        var length = response.Grants.length;
-       
-        if (length == 1) {
-            let obj = {
-                "Owner": response.Grants[0].Grantee.DisplayName,
-                "ID": response.Grants[0].Grantee.ID,
-                "OwnerPermission": response.Grants[0].Permission,
-                "OwnerType": response.Grants[0].Grantee.Type
-               
-            };
-
-            res.send({Result:[obj]});
-        }
-        else if (length == 2) {
-            let obj = {
-                "Owner": response.Grants[0].Grantee.DisplayName,
-                "ID": response.Grants[0].Grantee.ID,
-                "OwnerPermission": response.Grants[0].Permission,
-                "OwnerType": response.Grants[0].Grantee.Type,
-                "UserType": response.Grants[0].Grantee.Type,
-                "UserPermissions": response.Grants[1].Permission 
-
-            };
-            res.send({Result:[obj]});
-        }
-
-        else {
-            let obj = {
-                "Owner": response.Grants[0].Grantee.DisplayName,
-                "ID": response.Grants[0].Grantee.ID,
-                "OwnerPermission": response.Grants[0].Permission,
-                "OwnerType": response.Grants[0].Grantee.Type,
-                "UserType": response.Grants[0].Grantee.Type,
-                "UserPermissions": response.Grants[1].Permission + "," + response.Grants[2].Permission
-            };
-
-            res.send({Result:[obj]});
-
-        }
-      
-    } catch (err) {
-        let obj = {
-            Error: err.Code
-        }
-        res.send({Result:[obj]});
-    }
-
-
-});
 
 // Bucket Versions 
 
@@ -189,32 +127,30 @@ exports.router.post('/bucketHeaders', async (req, res) => {
     try {
         const payload = req.body;
         const headers = await requestId(payload.Bucket);
-        if(headers?.$metadata?.httpStatusCode > 300){
+        if (headers?.$metadata?.httpStatusCode > 300) {
             let obj = {
                 Error: "The Bucket not found"
 
             }
-            res.send({Result:[obj] })
-                
-           
+            res.send({ Result: [obj] })
+
+
         }
-        const region = await Region(payload.Bucket);
-        const accesspoint = await AccessPoint(payload.AccountId, payload.Name);
-        const result = [headers,region,accesspoint]
+        const region = await regionName(payload.Bucket);
+        const accesspoint = await accessPoint(payload.AccountId, payload.Name);
+        const result = [headers, region, accesspoint]
         let list = {};
-        for(var i=0; i<result.length;i++)
-        {
-            for(const [key, value] of Object.entries(result[i]))
-            {
-            list[key]=value
+        for (var i = 0; i < result.length; i++) {
+            for (const [key, value] of Object.entries(result[i])) {
+                list[key] = value
             }
         }
-        res.send({Result :list});
-    }catch (err) {
+        res.send({ Result: list });
+    } catch (err) {
         let obj = {
             Error: err.Code
         }
-        res.send({Result:[obj]});
+        res.send({ Result: [obj] });
     }
 });
 
@@ -247,7 +183,7 @@ function requestId(bucketName) {
 
 // region
 
-function Region(bucketName) {
+function regionName(bucketName) {
     return new Promise(async (resolve, reject) => {
         const input = { "Bucket": bucketName }
         try {
@@ -276,7 +212,7 @@ function Region(bucketName) {
 
 // AccessPointAlias
 
-function AccessPoint(accountId, accessPointName) {
+function accessPoint(accountId, accessPointName) {
     return new Promise(async (resolve, reject) => {
         const input = {
             "AccountId": accountId,
@@ -303,77 +239,151 @@ function AccessPoint(accountId, accessPointName) {
 
 }
 
-// bucketPolicyStatus to know the bucket is public access or private access
+// Bucket Permissions  
 
-exports.router.post('/bucketPolicyStatus', async (req, res) => {
-    const payload = req.body;
-    const input = {
-        "Bucket": payload.Bucket
-
-    }
+exports.router.post('/bucketPermissions', async (req, res) => {
     try {
-        const command = new s3Conn.GetBucketPolicyStatusCommand(input);
-        const response = await client.send(command);
-        // const policyStatus = response.PolicyStatus.IsPublic ?response.PolicyStatus.IsPublic.BlockPublicAcls:false;
-        let status = {
-            Result: response.PolicyStatus
+        let payload = req.body;
+        const policyStatus = await bucketPolicyStatus(payload.Bucket);
+        const ownerShip = await objectOwnerShip(payload.Bucket);
+        const accessControl = await accessControlList(payload.Bucket);
+        const cors = await crossOrigin(payload.Bucket);
+        const result = [ policyStatus,ownerShip, accessControl, cors];
+        let list = {};
+        for (var i = 0; i < result.length; i++) {
+            for (const [key, value] of Object.entries(result[i])) {
+                list[key] = value
+            }
         }
-        res.send(status);
+        res.send({ Result: list });
+        // res.send({ Result: result });
+
     } catch (err) {
-        let obj = {
-           Error: err.Code
-        }
-        res.send({ Result: obj });
+        res.send({ Result: err });
+
     }
 })
+
+function accessControlList(bucket) {
+    return new Promise(async (resolve, reject) => {
+        const input = {
+            "Bucket": bucket
+        }
+        try {
+            const command = new s3Conn.GetBucketAclCommand(input);
+            const response = await client.send(command);
+            var length = response.Grants.length;
+
+            if (length == 1) {
+                let obj = {
+                    "Owner": response.Grants[0].Grantee.DisplayName,
+                    "CanonicalID": response.Grants[0].Grantee.ID,
+                    "OwnerPermission": response.Grants[0].Permission,
+                    // "OwnerType": response.Grants[0].Grantee.Type
+
+                }
+                resolve(obj)
+            }
+            else if (length == 2) {
+                let obj = {
+                    "Owner": response.Grants[0].Grantee.DisplayName,
+                    "CanonicalID": response.Grants[0].Grantee.ID,
+                    "OwnerPermission": response.Grants[0].Permission,
+                    // "OwnerType": response.Grants[0].Grantee.Type,
+                    // "UserType": response.Grants[0].Grantee.Type,
+                    "UserPermission": response.Grants[1].Permission
+                }
+                resolve(obj)
+            }
+            else {
+                let obj = {
+                    "Owner": response.Grants[0].Grantee.DisplayName,
+                    "CanonicalID": response.Grants[0].Grantee.ID,
+                    "OwnerPermission": response.Grants[0].Permission,
+                    // "OwnerType": response.Grants[0].Grantee.Type,
+                    // "UserType": response.Grants[0].Grantee.Type,
+                    "UserPermissions": response.Grants[1].Permission + "," + response.Grants[2].Permission
+                }
+                resolve(obj)
+            }
+        } catch (err) {
+            resolve({ AccessControlList: err.Code });
+        }
+    })
+}
+
+// bucketPolicyStatus to know the bucket is public access or private access
+
+function bucketPolicyStatus(bucket) {
+    return new Promise(async (resolve, reject) => {
+        const input = {
+            "Bucket": bucket
+        }
+        try {
+            const command = new s3Conn.GetBucketPolicyStatusCommand(input);
+            const response = await client.send(command);
+            // const policyStatus = response.PolicyStatus.IsPublic ?response.PolicyStatus.IsPublic.BlockPublicAcls:false;
+            let status =  response.PolicyStatus.IsPublic;
+            if (status==true){
+                resolve({Access:"Public"})               
+            }
+           
+        } catch (err) {
+            let obj = {
+               Access: err.message &&`Bucket and objects not public`
+            }
+            resolve(obj);
+        }
+    })
+}
+
 
 // object ownership (To find the owner of the object in the bucket)
 
-
-exports.router.post('/objectownership', async (req, res) => {
-    const payload = req.body;
-    const input = {
-        "Bucket": payload.Bucket
-
-    }
-    try {
-        const command = new s3Conn.GetBucketOwnershipControlsCommand(input);
-        const response = await client.send(command);
-        const obj = {
-            Result: response.OwnershipControls.Rules
+function objectOwnerShip(bucket) {
+    return new Promise(async (resolve, reject) => {
+        const input = {
+            "Bucket": bucket
         }
-        res.send(obj)
-    } catch (err) {
-        let obj = {
-            Error: err.Code
+        try {
+            const command = new s3Conn.GetBucketOwnershipControlsCommand(input);
+            const response = await client.send(command);
+            const obj = response.OwnershipControls.Rules[0];           
+            resolve(obj)
+        } catch (err) {
+            let obj = {
+                ObjectOwnership: err.message
+            }
+            resolve(obj);
         }
-        res.send({ Result: [obj] });
-    }
-})
+    })
+
+}
 
 //cross origin
-exports.router.post('/crossOrigin', async (req, res) => {
-    const payload = req.body;
-    const input = {
-        Bucket: payload.Bucket
-    }
 
-    const command = new s3Conn.GetBucketCorsCommand(input);
-    try {
-        const response = await client.send(command);
-        // response.CORSRules
-        let cors = {
-            Result: response.CORSRules
+function crossOrigin(bucket) {
+    return new Promise(async (response, reject) => {
+        const input = {
+            Bucket: bucket
         }
-        res.send(cors);
-    } catch (err) {
-        let obj = {
-            Error: err.Code
+        const command = new s3Conn.GetBucketCorsCommand(input);
+        try {
+            const response = await client.send(command);
+            // response.CORSRules
+            let cors ={
+                CORS: response.CORSRules
+            }
+            response(cors);
+        } catch (err) {
+            let obj = {
+               CORS: err.message &&`No configurations to display`
+            }
+            response(obj);
         }
-        res.send({ Result: [obj] });
-    }
 
-});
+    });
+}
 
 
 // object Versions
@@ -452,13 +462,13 @@ exports.router.post('/objectVersions', async (req, res) => {
             DeleteMarkers: deletemarkersList
 
         }
-        res.send({Result:result});
+        res.send({ Result: result });
 
     } catch (err) {
         var error = {
             Error: err.Code
         }
-        res.send({Result:error});
+        res.send({ Result: error });
     }
 
 
@@ -489,7 +499,7 @@ exports.router.post('/copyobject', async (req, res) => {
         var error = {
             Error: err.Code
         }
-        res.send({Result:error});
+        res.send({ Result: error });
     }
 
 
