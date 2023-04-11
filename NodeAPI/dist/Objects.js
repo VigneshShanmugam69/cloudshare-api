@@ -24,23 +24,29 @@
   exports.router.post('/getobjects', (req, res) => {
     const payload = req.body;
     const s3params = {
-      Bucket: payload.Bucket,
-      MaxKeys: 1000,
+      Bucket: payload.Bucket,              
+      // MaxKeys: 1000,
       Delimiter: '/',
+      FetchOwner: true 
     };
     s3.listObjectsV2(s3params, function (err, data) {
       if (err) {
-        res.send(err, err.stack);
-      }
-      else {                
-        const commonPrefixes = data.CommonPrefixes  
+        if (err.code === 'NoSuchBucket') {
+          res.send({Result: 'The bucket does not exist'});
+        } 
+        else {
+          res.send(err, err.stack);    
+        } 
+      } else {                
+        const commonPrefixes = data.CommonPrefixes 
         const objects = data.Contents.map(obj => ({
-          Key: obj.Key,          
+          Key: obj.Key,        
           Size: formatSizeUnits(obj.Size),        
           Type: obj.Type,
           LastModified: obj.LastModified,
           StorageClass: obj.StorageClass,     
-          Type: obj.ContentType   
+          Type: obj.ContentType,
+          Owner: obj.Owner.DisplayName
         }));
         res.send({commonPrefixes, objects});      
     }});     
@@ -51,13 +57,18 @@
   exports.router.post('/getmetadata', async (req, res) => {
     const payload = req.body;
     const params = {
-      Bucket: payload.Bucket,
+      Bucket: payload.Bucket,      
       Key: payload.Key
     };
-    s3.headObject(params, function(err, data) {
+    s3.headObject(params, function(err, data) {      
       if (err) {
-        res.send(err, err.stack); 
-      }
+        if (err.code === 'NotFound') {
+          res.send({Result: 'The bucket or object does not exist'});
+        }         
+        else {
+          res.send(err, err.stack);    
+        }
+      } 
       else {
         res.send({Value: data.ContentType});          
       }
@@ -73,9 +84,16 @@
     };
     s3.headObject(params, function (err, data) {
       if (err) {
-        res.send(response.err);
-      }
-      else {  
+        if (err.code === 'ReferenceError') {
+          res.send({Result: 'The bucket or object does not exist'});
+        } 
+        if (err.code === 'NotFound') {
+          res.send({Result: 'The object does not exist'});
+        }
+        else {
+          res.send(err, err.stack);    
+        }
+      } else {  
         var date_time = new Date();
         var date = date_time.toUTCString()         
         const objects = {
@@ -99,7 +117,7 @@
   exports.router.post('/getAccessControlList', async (req, res) => {
     const payload = req.body;
     const params = {
-      Bucket: payload.Bucket,
+      Bucket: payload.Bucket,      
       Key: payload.Key
     };
     s3.getObjectAcl(params, function (err, data) {
@@ -112,15 +130,25 @@
   })
 
   // To retrieve tag set of an object
-  exports.router.post('/getObjectTag', async (req, res) => {
+  exports.router.post('/getObjectTag', async (req, res) => {    
     const payload = req.body;
+    const objectKey = payload.Key;
+    const folderName = payload.folderPath; // Give empty string ("") to handle folder nullable.
     const params = {
-      Bucket: payload.Bucket,
-      Key: payload.Key,
+      Bucket: payload.Bucket,     
+      Key: folderName + objectKey // concatenate folder name and object key
     };
     s3.getObjectTagging(params, (err, data) => {
       if (err) {
-        res.send(err, err.stack);
+        if (err.code === 'NoSuchKey') {
+          res.send({Result: 'The object does not exist'});
+        } 
+        if (err.code === 'NoSuchBucket') {
+          res.send({Result: 'The bucket does not exist'});
+        }
+        else {
+          res.send(err, err.stack);    
+        } 
       } else {
         const tagSet = data.TagSet
         if (Array.isArray(tagSet) && tagSet.length) {
@@ -166,7 +194,7 @@
   exports.router.post('/getObjectProperties', async (req, res) =>{
     const payload = req.body;
     const params = {
-      Bucket: payload.bucket,
+      Bucket: payload.bucket,     
       Key: payload.key,      
     };
     s3.getObject(params, function(err, data) {
@@ -195,7 +223,7 @@
   //   const params = {
   //     Bucket: payload.bucket,
   //     Key: payload.key,
-  //     ObjectAttributes: [ Checksum    ]
+  //     ObjectAttributes: [ ETag || Checksum ]
   //   }
   //   s3.getObjectAttributes(params, function(err, data) {
   //     if (err) {
@@ -206,7 +234,6 @@
   //     }
   //   });
   // })
-
 
   //Delete single object
   exports.router.get('/deleteObject', async (req, res) => {

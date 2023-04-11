@@ -24,24 +24,35 @@
     const params = {
       Bucket: payload.Bucket,
       Prefix: payload.folderPath,
+      Delimiter: '/',
+      MaxKeys: 1000,
     };
     s3.listObjectsV2(params, (err, data) => {
       if (err) {
-        res.send(`${err}`);
-      } else {                 
-        const objects = data.Contents.map(obj => ({
+        if (err.code === 'NoSuchBucket') {
+          res.send({Result: 'The bucket does not exist'});
+        } 
+        else {
+          res.send(`${err}`);    
+        }      
+      } else {   
+          const CommonPrefixes = data.CommonPrefixes;
+          // const childPrefix = CommonPrefixes.split(payload.folderPath)[1]; //To spilt parent path          
+          const filteredContents = data.Contents.filter((content) => content.Size > 0);  //To skip keys with no values 
+          const objects = filteredContents.map(obj => ({         
           Key: obj.Key.split(payload.folderPath)[1], // Split the key by the prefix and take the second element          
           Size: formatSizeUnits(obj.Size),
           LastModified: obj.LastModified.toUTCString(),
           Metadata: obj.Metadata,
-          Owner: obj.Owner,
+          Owner: obj.Owner,         
           StorageClass: obj.StorageClass,
           ETag: obj.ETag,
-        }));
-        res.send(objects);
+        }));       
+        res.send({CommonPrefixes, objects});
       }
-    });
+    });    
   });
+
 
   //Folder properties
   exports.router.post('/getfolderproperties', async (req, res) => {
@@ -49,6 +60,7 @@
     const params = {
       Bucket: payload.Bucket,
       Prefix: payload.folderPath,
+      FetchOwner: true 
     };
     s3.listObjectsV2(params, (err, data) => {
       if (err) {
@@ -72,7 +84,7 @@
 
         // Server-side modified and owners
         const modifiedDates = objects.map(obj => obj.LastModified);
-        // const owners = objects.map(obj => obj.Owner.DisplayName);
+        const owners = objects.map(obj => obj.Owner.DisplayName);
 
         // Storage classes
         const storageClasses = {};
@@ -90,7 +102,7 @@
           TotalSize: formattedSize,
           FileTypes: fileTypes,
           ModifiedDates: modifiedDates,
-          // Owner : owners,
+          Owner : owners,
           StorageClasses: storageClasses
         };
         res.send(response);
@@ -98,24 +110,44 @@
     });
   });
 
-  //Folder Headers
-  // exports.router.post('/getFolderHeaders', async (req, res) => {
-  //   const bucketName = 'cloudstier-plakshmanan-demo-001';
-  //   const folderName = 'Pavi/';
-  //   const params = {
-  //     Bucket: bucketName,
-  //     Prefix: folderName,
-  //     Delimiter: '/',
-  //     MaxKeys: 0     
-  //   };
-  //   s3.headObject(params, function(err, data) {
-  //     if (err) {
-  //       console.log(err, err.stack);
-  //     } else {
-  //       console.log(data);
-  //     }
-  //   });
-  // });
+  // Folder Headers
+  exports.router.post('/getFolderHeaders', async (req, res) => {   
+    const payload = req.body;
+    const params = {
+      Bucket: payload.Bucket,
+      Key: payload.folderPath     
+    };
+    s3.headObject(params, function(err, data) {
+      if (err) {
+        if (err.code === 'ReferenceError') {
+          res.send({Result: 'The bucket or object does not exist'});
+        } 
+        if (err.code === 'NotFound') {
+          res.send({Result: 'The folder path does not exist'});
+        }
+        else {
+          res.send(err, err.stack);    
+        }
+      } else {
+        var date_time = new Date();
+        var date = date_time.toUTCString()         
+        const objects = {
+          ServerSideEncryption: data.ServerSideEncryption,
+          VersionId: data.VersionId,
+          AcceptRanges: data.AcceptRanges,
+          ContentLength: data.ContentLength,
+          ContentType: data.ContentType,
+          Date: date,
+          ETag: data.ETag,
+          LastModified: data.LastModified.toUTCString(),    
+          Server: data.Server,
+          RequestID: data.Metadata['x-amz-request-id'],
+          xamzid2: data.Metadata['x-amz-id-2']
+        }    
+        res.send({Header: objects}); 
+      }
+    });
+  });
 
   // Folder Overview
   exports.router.post('/getFolderLocation', async (req, res) => {
@@ -143,4 +175,4 @@
       };
       const folderURI = `s3://${params.bucketName}/${params.folderPath}`;
       res.send({S3URI: folderURI});
-    })
+    });     
