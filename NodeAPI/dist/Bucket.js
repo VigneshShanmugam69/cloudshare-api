@@ -248,7 +248,7 @@ exports.router.post('/bucketPermissions', async (req, res) => {
         const ownerShip = await objectOwnerShip(payload.Bucket);
         const accessControl = await accessControlList(payload.Bucket);
         const cors = await crossOrigin(payload.Bucket);
-        const result = [ policyStatus,ownerShip, accessControl, cors];
+        const result = [policyStatus, ownerShip, accessControl, cors];
         let list = {};
         for (var i = 0; i < result.length; i++) {
             for (const [key, value] of Object.entries(result[i])) {
@@ -323,14 +323,14 @@ function bucketPolicyStatus(bucket) {
             const command = new s3Conn.GetBucketPolicyStatusCommand(input);
             const response = await client.send(command);
             // const policyStatus = response.PolicyStatus.IsPublic ?response.PolicyStatus.IsPublic.BlockPublicAcls:false;
-            let status =  response.PolicyStatus.IsPublic;
-            if (status==true){
-                resolve({Access:"Public"})               
+            let status = response.PolicyStatus.IsPublic;
+            if (status == true) {
+                resolve({ Access: "Public" })
             }
-           
+
         } catch (err) {
             let obj = {
-               Access: err.message &&`Bucket and objects not public`
+                Access: err.message && `Bucket and objects not public`
             }
             resolve(obj);
         }
@@ -348,7 +348,7 @@ function objectOwnerShip(bucket) {
         try {
             const command = new s3Conn.GetBucketOwnershipControlsCommand(input);
             const response = await client.send(command);
-            const obj = response.OwnershipControls.Rules[0];           
+            const obj = response.OwnershipControls.Rules[0];
             resolve(obj)
         } catch (err) {
             let obj = {
@@ -371,13 +371,13 @@ function crossOrigin(bucket) {
         try {
             const response = await client.send(command);
             // response.CORSRules
-            let cors ={
+            let cors = {
                 CORS: response.CORSRules
             }
             response(cors);
         } catch (err) {
             let obj = {
-               CORS: err.message &&`No configurations to display`
+                CORS: err.message && `No configurations to display`
             }
             response(obj);
         }
@@ -474,36 +474,24 @@ exports.router.post('/objectVersions', async (req, res) => {
 
 });
 
-// Copy Object from source bucket to the destination bucket
-
-exports.router.post('/copyobject', async (req, res) => {
-    const payload = req.body;
-    const parms = {
-        "Bucket": payload.destinationbucket,
-        "CopySource": payload.sourcebucket,
-        "Key": payload.targetKeyName
-    }
-
-    try {
-        const command = new s3Conn.CopyObjectCommand(parms);
-        const response = await client.send(command);
-        var obj = {
-            CopySourceVersionId: response.CopySourceVersionId,
-            VersionId: response.VersionId,
-            ServerSideEncryption: response.ServerSideEncryption,
-            ETag: response.CopyObjectResult.ETag,
-            LastModified: response.CopyObjectResult.LastModified.toUTCString()
-        }
-        res.send({ Result: [obj] });
-    } catch (err) {
-        var error = {
-            Error: err.Code
-        }
-        res.send({ Result: error });
-    }
 
 
-});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

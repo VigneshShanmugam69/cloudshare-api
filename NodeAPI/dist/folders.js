@@ -1,6 +1,8 @@
   const express_1 = require("express");
   exports.router = (0, express_1.Router)();
   const AWS = require('aws-sdk');
+  const path = require('path');
+  const moment = require('moment');
 
   const s3 = new AWS.S3({
     accessKeyId: 'AKIA6HCJB5CUWQJCY3FQ',
@@ -84,24 +86,52 @@
         // Convert file size B into KB, MB, GB       
         const totalSize = objects.reduce((acc, obj) => acc + obj.Size, 0);
         const formattedSize = formatSizeUnits(totalSize);
-
-        // File types
-        const fileTypes = {};
+        // File types    
+        var fileTypes = [];       
         objects.filter(obj => !obj.Key.endsWith('/')).forEach(obj => {
-          const fileType = obj.Key.split('.').pop();
-          fileTypes[fileType] = (fileTypes[fileType] || 0) + 1;
-        });
+          const extname = path.extname(obj.Key);  
+          const extensionWithoutDot = extname.substring(1); 
+          if (!fileTypes.includes(extensionWithoutDot)) {
+           fileTypes.push(extensionWithoutDot);
+         }
+        });            
+        function joinDemo() {
+          fileTypes = fileTypes.join(", ");   //To pass the output as a string
+        }        
+        joinDemo();
 
-        // Server-side modified and owners
         const modifiedDates = objects.map(obj => obj.LastModified);
-        const owners = objects.map(obj => obj.Owner.DisplayName);
+        const maxDate = new Date(Math.max.apply(null,modifiedDates));
+        const minDate = new Date(Math.min.apply(null,modifiedDates));
+        const max = moment(maxDate).format('DD-MM-YYYY hh:mm:ss A'); 
+        const min = moment(minDate).format('DD-MM-YYYY hh:mm:ss A'); 
+        const LastModified = max + ' - ' + min
+        
+        //Owner
+        var Owner = [];
+        objects.forEach(obj => {
+          const owner = obj.Owner.DisplayName
+          if (!Owner.includes(owner)) {
+            Owner.push(owner);
+          }
+        }); 
+        function joinDemo1() {
+          Owner = Owner.join(", ");   //To pass the output as a string
+        }        
+        joinDemo1();
 
         // Storage classes
-        const storageClasses = {};
+        var storageClasses = [];
         objects.forEach(obj => {
           const storageClass = obj.StorageClass;
-          storageClasses[storageClass] = (storageClasses[storageClass] || 0) + 1;
+          if (!storageClasses.includes(storageClass)) {
+            storageClasses.push(storageClass);
+          }
         });
+        function joinDemo2() {
+          storageClasses = storageClasses.join(", ");   //To pass the output as a string
+        }        
+        joinDemo2();
 
         // return folder properties
         const response = {
@@ -111,8 +141,8 @@
           TotalFolders: totalFolders,
           TotalSize: formattedSize,
           FileTypes: fileTypes,
-          ModifiedDates: modifiedDates,
-          Owner: owners,
+          ModifiedDates: LastModified,
+          Owner : Owner,
           StorageClasses: storageClasses
         };
         res.send(response);
@@ -140,7 +170,7 @@
         }
       } else {
         var date_time = new Date();
-        var date = date_time.toUTCString()
+        var date = date_time.toUTCString();
         const objects = {
           ServerSideEncryption: data.ServerSideEncryption,
           VersionId: data.VersionId,
@@ -153,7 +183,7 @@
           Server: data.Server,
           RequestID: data.Metadata['x-amz-request-id'],
           xamzid2: data.Metadata['x-amz-id-2']
-        }
+        };
         res.send({ Header: objects });
       }
     });

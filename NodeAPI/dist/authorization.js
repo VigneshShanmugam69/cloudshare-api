@@ -433,3 +433,28 @@ function verifyJwtToken(req, res, next) {
 }
 
 
+
+exports.router.get('/listUsers', async (req, res) => {
+    try {
+        const authClient = new okta.Client({
+            orgUrl: 'https://dev-99932483.okta.com',
+            issuer: 'https://dev-99932483.okta.com/oauth2/default',
+            token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd',
+            clientId: '0oa91fv3ncEaofktD5d7',
+            pkce: true,
+            redirectUri: 'http://127.0.0.1:4201/callback'
+        });
+        const users = [];
+        authClient.listUsers().each(user => {
+            users.push({
+                id: user.id,
+                firstname: user.profile.firstName,
+                lastname: user.profile.lastName,
+                email: user.profile.email,
+                status: user.status
+            })
+        }).then(() => res.send(users));
+    } catch (error) {
+        res.send(error.message);
+    }
+});

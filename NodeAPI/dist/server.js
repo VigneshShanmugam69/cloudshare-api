@@ -12,6 +12,8 @@ const authorization=require("./authorization");
 const properties=require("./properties");
 const systemWallet = require('./systemwallet');
 const ssoConfig = require('./sso');
+const objectMenu = require('./objectmenu');
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -24,6 +26,7 @@ app.use(authorization.router);
 app.use(properties.router);
 app.use(systemWallet.router);
 app.use(ssoConfig.router);
+app.use(objectMenu.router);
 app.listen(4201, () => {
     return console.log('CloudShare server started...');
 });
