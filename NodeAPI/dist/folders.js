@@ -16,7 +16,7 @@
       index++;
     }
     return `${parseFloat(bytes.toFixed(2))} ${units[index]}`;
-  } 
+  }
 
   //To get objects within a folder with meta data
   exports.router.post('/getfolderobjects', (req, res) => {
@@ -30,27 +30,37 @@
     s3.listObjectsV2(params, (err, data) => {
       if (err) {
         if (err.code === 'NoSuchBucket') {
-          res.send({Result: 'The bucket does not exist'});
-        } 
+          res.send({ Result: 'The bucket does not exist' });
+        }
         else {
-          res.send(`${err}`);    
-        }      
-      } else {   
-          const CommonPrefixes = data.CommonPrefixes;
-          // const childPrefix = CommonPrefixes.split(payload.folderPath)[1]; //To spilt parent path          
-          const filteredContents = data.Contents.filter((content) => content.Size > 0);  //To skip keys with no values 
-          const objects = filteredContents.map(obj => ({         
+          res.send(`${err}`);
+        }
+      } else {
+        const commonPrefixes = data.CommonPrefixes;
+        const parentFolder = params.Prefix;
+        const folderNames = [];
+        const parentFolderLength = parentFolder.length;
+        for (let i = 0; i < commonPrefixes.length; i++) {
+          const prefix = commonPrefixes[i].Prefix;
+          const folderName = prefix.substring(parentFolderLength, prefix.length - 1) + '/';
+          const folderObj = {
+            Prefix: folderName
+          }
+          folderNames.push(folderObj)
+        }
+        const filteredContents = data.Contents.filter((content) => content.Size > 0);  //To skip keys with no values 
+        const objects = filteredContents.map(obj => ({
           Key: obj.Key.split(payload.folderPath)[1], // Split the key by the prefix and take the second element          
           Size: formatSizeUnits(obj.Size),
           LastModified: obj.LastModified.toUTCString(),
           Metadata: obj.Metadata,
-          Owner: obj.Owner,         
+          Owner: obj.Owner,
           StorageClass: obj.StorageClass,
           ETag: obj.ETag,
-        }));       
-        res.send({CommonPrefixes, objects});
+        }));
+        res.send({ folderNames, objects });
       }
-    });    
+    });
   });
 
 
@@ -60,7 +70,7 @@
     const params = {
       Bucket: payload.Bucket,
       Prefix: payload.folderPath,
-      FetchOwner: true 
+      FetchOwner: true
     };
     s3.listObjectsV2(params, (err, data) => {
       if (err) {
@@ -102,7 +112,7 @@
           TotalSize: formattedSize,
           FileTypes: fileTypes,
           ModifiedDates: modifiedDates,
-          Owner : owners,
+          Owner: owners,
           StorageClasses: storageClasses
         };
         res.send(response);
@@ -111,26 +121,26 @@
   });
 
   // Folder Headers
-  exports.router.post('/getFolderHeaders', async (req, res) => {   
+  exports.router.post('/getFolderHeaders', async (req, res) => {
     const payload = req.body;
     const params = {
       Bucket: payload.Bucket,
-      Key: payload.folderPath     
+      Key: payload.folderPath
     };
-    s3.headObject(params, function(err, data) {
+    s3.headObject(params, function (err, data) {
       if (err) {
         if (err.code === 'ReferenceError') {
-          res.send({Result: 'The bucket or object does not exist'});
-        } 
+          res.send({ Result: 'The bucket or object does not exist' });
+        }
         if (err.code === 'NotFound') {
-          res.send({Result: 'The folder path does not exist'});
+          res.send({ Result: 'The folder path does not exist' });
         }
         else {
-          res.send(err, err.stack);    
+          res.send(err, err.stack);
         }
       } else {
         var date_time = new Date();
-        var date = date_time.toUTCString()         
+        var date = date_time.toUTCString()
         const objects = {
           ServerSideEncryption: data.ServerSideEncryption,
           VersionId: data.VersionId,
@@ -139,12 +149,12 @@
           ContentType: data.ContentType,
           Date: date,
           ETag: data.ETag,
-          LastModified: data.LastModified.toUTCString(),    
+          LastModified: data.LastModified.toUTCString(),
           Server: data.Server,
           RequestID: data.Metadata['x-amz-request-id'],
           xamzid2: data.Metadata['x-amz-id-2']
-        }    
-        res.send({Header: objects}); 
+        }
+        res.send({ Header: objects });
       }
     });
   });
@@ -154,16 +164,16 @@
     const payload = req.body;
     var params = {
       Bucket: payload.bucket
-     };
-     s3.getBucketLocation(params, function(err, data) {
-       if (err) {
+    };
+    s3.getBucketLocation(params, function (err, data) {
+      if (err) {
         res.send(`${params.Bucket}: ${err}`);
-       }
-       else {
-        const region = data.LocationConstraint || 'us-east-1';    
-        res.send({AWSRegion: region})    
-       }     
-     });
+      }
+      else {
+        const region = data.LocationConstraint || 'us-east-1';
+        res.send({ AWSRegion: region })
+      }
+    });
   });
 
     //To get Object URI 
@@ -174,5 +184,5 @@
         folderPath: payload.folderPath
       };
       const folderURI = `s3://${params.bucketName}/${params.folderPath}`;
-      res.send({S3URI: folderURI});
+      res.send({ S3URI: folderURI });
     });     
