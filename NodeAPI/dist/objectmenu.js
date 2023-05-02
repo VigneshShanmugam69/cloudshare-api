@@ -13,10 +13,15 @@ const s3 = new AWS.S3({
 
 exports.router.post('/copyobject', async (req, res) => {
     const payload = req.body;
+    const sourceBucket = payload.sourceBucket;
+    const sourceKeyName = payload.sourceKeyName;
+    // source folder or source object
+    const destinationBucket = payload.destinationBucket;
+    const destinationKeyName = payload.destinationKeyName;
 
     const listObjectParams = {
-        Bucket: payload.sourceBucket,
-        Prefix: payload.folderName
+        Bucket: sourceBucket,
+        Prefix: sourceKeyName
     }
     try {
         s3.listObjectsV2(listObjectParams, async (err, data) => {
@@ -30,9 +35,9 @@ exports.router.post('/copyobject', async (req, res) => {
 
                 (data.Contents.forEach(async (object) => {
                     const copyObjectParams = {
-                        Bucket: payload.destinationBucket,
-                        CopySource: `${payload.sourceBucket}/${object.Key}`,
-                        Key: `${payload.folderName}${object.Key.replace(payload.folderName, '')}`
+                        Bucket: destinationBucket,
+                        CopySource: `${sourceBucket}/${object.Key}`,
+                        Key: `${destinationKeyName}${object.Key.replace(sourceKeyName, '')}`
                     };
                     s3.copyObject(copyObjectParams, (err, data) => {
                         if (err) {
@@ -74,8 +79,8 @@ exports.router.post('/copyobject', async (req, res) => {
 exports.router.post('/moveObject', async (req, res) => {
     try {
         const payload = req.body
-        const copyObject = await copy(payload.sourceBucket, payload.folderName, payload.destinationBucket)
-        const deleteObject = await deleteObjects(payload.sourceBucket, payload.folderName)
+        const copyObject = await copy(payload.sourceBucket, payload.sourceKeyName, payload.destinationBucket,payload.destinationKeyName)
+        const deleteObject = await deleteObjects(payload.sourceBucket,payload.sourceKeyName)
         res.send({ Result: copyObject });
 
     } catch (err) {
@@ -86,18 +91,18 @@ exports.router.post('/moveObject', async (req, res) => {
     }
 
 })
-function copy(sourceBucket, folderName, destinationBucket) {
+function copy(sourceBucket, sourceKeyName, destinationBucket,destinationKeyName) {
     return new Promise(async (resolve, reject) => {
         const listObjectParams = {
             Bucket: sourceBucket,
-            Prefix: folderName
+            Prefix: sourceKeyName
         }
         s3.listObjectsV2(listObjectParams, async (err, data) => {
             if (err) {
                 var error = {
                     Error: err.code
                 };
-                resolve(err);
+                resolve(error);
 
             }
             else {
@@ -106,7 +111,7 @@ function copy(sourceBucket, folderName, destinationBucket) {
                     const copyObjectParams = {
                         Bucket: destinationBucket,
                         CopySource: `${sourceBucket}/${object.Key}`,
-                        Key: `${folderName}${object.Key.replace(folderName, '')}`
+                        Key: `${destinationKeyName}${object.Key.replace(sourceKeyName, '')}`
                         // 1st folderName=destinationFolder, 2nd foldrName = source folder
                     };
                     s3.copyObject(copyObjectParams, (err, data) => {
@@ -138,11 +143,11 @@ function copy(sourceBucket, folderName, destinationBucket) {
     })
 }
 
-function deleteObjects(sourceBucket, folderName) {
+function deleteObjects(sourceBucket, sourceKeyName) {
     return new Promise(async (resolve, reject) => {
         const listObjectParams = {
             Bucket: sourceBucket,
-            Prefix: folderName
+            Prefix: sourceKeyName
         }
         s3.listObjectsV2(listObjectParams, async (err, data) => {
             if (err) {
