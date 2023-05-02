@@ -335,8 +335,8 @@ exports.router.put('/resetPasswordByFirstLogin', async (req, res) => {
 async function authenticateOktaUser(username, password) {
 
     const authClient = new okta.Client({
-        orgUrl: 'https://dev-70779564.okta.com',
-        token: '009lQeaB5h1DMGLtbuyVMTNfCruR2ABLhgA3lhIkMw'
+        orgUrl: 'https://dev-99932483.okta.com',
+        token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd'
     });
     const createSessionRequest = {
         username: username,

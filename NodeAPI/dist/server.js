@@ -15,6 +15,7 @@ const ssoConfig = require('./sso');
 const objectMenu = require('./objectmenu');
 
 const app = express();
+const bucketmanagement =require('./bucketmanagement')
 app.use(cors());
 app.use(bodyParser.json());
 app.use(user.router);
@@ -27,6 +28,7 @@ app.use(properties.router);
 app.use(systemWallet.router);
 app.use(ssoConfig.router);
 app.use(objectMenu.router);
+app.use(bucketmanagement.router);
 app.listen(4201, () => {
     return console.log('CloudShare server started...');
 });
