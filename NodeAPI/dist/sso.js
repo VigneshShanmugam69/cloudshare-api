@@ -1,4 +1,5 @@
 const authClient = require('@okta/okta-auth-js');
+const okta=require("@okta/okta-sdk-nodejs")
 const express = require("express");
 const axios = require('axios');
 const AWS = require('aws-sdk');
@@ -42,6 +43,41 @@ async function authenticateUser(Username, Password) {
         return obj;
     }
 }
+
+exports.router.post('/deleteUser',async(req,res)=>{
+  try {
+    const oktaOrgUrl = 'https://dev-99932483.okta.com';
+        const oktaApiClientToken = '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd';
+    const oktaClient = new okta.Client({
+                orgUrl: oktaOrgUrl,
+                issuer: 'https://dev-99932483.okta.com/oauth2/default',
+                // clientId:'0oa96jm6l9Xbt6lmy5d7',
+                token: oktaApiClientToken,
+                redirectUri:'http:/localhost:4201/',
+                scopes: ['openid', 'profile', 'email'],
+                audience: 'api://default',
+              });
+              let payload={
+                groupId: '00g8tq4c8fdkgGFvF5d7',
+                userId: '00u8eruhh9CiehWSR5d7'
+              }
+           const result= await oktaClient.removeUserFromGroup(
+            groupId= '00g8tq4c8fdkgGFvF5d7',
+            userId= '00u8tpyt9rv5SQaSk5d7'
+          );
+           let response={
+            "status":1,
+            "message":result
+           }
+           res.send(response)
+  } catch (error) {
+    let response={
+      "status":2,
+      "message":error
+     }
+     res.send(response)
+  }
+});
 
 
 exports.router.post('/getCredentials', async (req, res) => {
