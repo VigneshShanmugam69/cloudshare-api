@@ -2,7 +2,7 @@
   exports.router = (0, express_1.Router)();
   const AWS = require('aws-sdk');
   const path = require('path');
-  const moment = require('moment');
+  //const moment = require('moment');
 
   const s3 = new AWS.S3({
     accessKeyId: 'AKIA6HCJB5CUWQJCY3FQ',
