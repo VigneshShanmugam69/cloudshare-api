@@ -3,6 +3,7 @@ const okta=require("@okta/okta-sdk-nodejs")
 const express = require("express");
 const axios = require('axios');
 const AWS = require('aws-sdk');
+const { readBuilderProgram } = require('typescript');
 const sts = new AWS.STS();
 exports.router = (express.Router)();
 
@@ -57,6 +58,20 @@ exports.router.post('/deleteUser',async(req,res)=>{
                 scopes: ['openid', 'profile', 'email'],
                 audience: 'api://default',
               });
+
+oktaClient.oauth.accessToken
+              const oktaauth = new authClient.OktaAuth({
+                orgUrl: oktaOrgUrl,
+                issuer: 'https://dev-99932483.okta.com/oauth2/default',
+                // clientId:'0oa96jm6l9Xbt6lmy5d7',
+                token: oktaApiClientToken,
+                redirectUri:'http:/localhost:4201/',
+                scopes: ['openid', 'profile', 'email'],
+                audience: 'api://default',
+              });
+
+
+          
               let payload={
                 groupId: '00g8tq4c8fdkgGFvF5d7',
                 userId: '00u8eruhh9CiehWSR5d7'
@@ -67,7 +82,7 @@ exports.router.post('/deleteUser',async(req,res)=>{
           );
            let response={
             "status":1,
-            "message":result
+            "message":'Removed successfully'
            }
            res.send(response)
   } catch (error) {
@@ -77,6 +92,33 @@ exports.router.post('/deleteUser',async(req,res)=>{
      }
      res.send(response)
   }
+});
+
+
+exports.router.post('/generateSmalassertion',async(req,res)=>{
+ try {
+   const oktaOrgUrl = 'https://dev-99932483.okta.com';
+   const oktaApiClientToken = '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd';
+   const oktaClient = new okta.Client({
+     orgUrl: oktaOrgUrl,
+     issuer: 'https://dev-99932483.okta.com/oauth2/default',
+     clientId:'0oa96jm6l9Xbt6lmy5d7',
+     token: oktaApiClientToken,
+     redirectUri:'http:/localhost:4201/',
+     scopes: ['openid', 'profile', 'email'],
+     audience: 'api://default',
+   });
+//  const a= new oktaClient.oauth.accessToken;      
+ const s= await authClient.authenticate({
+  orgUrl: oktaOrgUrl,
+  token: oktaApiClientToken,
+  username:'vigneshshanmugam9@gmail.com',
+password:'Vignesh@9'}
+ )
+ res.send(s);
+ } catch (error) {
+  res.send(error.message);
+ }
 });
 
 
