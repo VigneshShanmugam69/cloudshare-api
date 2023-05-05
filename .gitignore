@@ -12,7 +12,7 @@
 
 # Node
 /node_modules
-/NodeAPI/package-lock.json
+NodeAPI/package-lock.json
 npm-debug.log
 yarn-error.log
 
