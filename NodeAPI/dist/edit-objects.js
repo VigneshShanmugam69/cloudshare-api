@@ -140,3 +140,42 @@ exports.router.post('/editStorageClassForFolder', function (req, res) {
     }
   })
 });
+
+// To change storage class
+exports.router.post('/editStorageClass', function (req, res) {
+  const payload = req.body;
+  const bucketName = payload.bucketName;
+  const folderPath = payload.folderPath;
+  const objectKey = folderPath + payload.key;
+  const storageClass = payload.storageClass
+  const objectParams = {
+    Bucket: bucketName,
+    CopySource: `${bucketName}/${objectKey}`,
+    Key: objectKey,
+    StorageClass: storageClass
+  };
+  s3.copyObject(objectParams, function (err, data) {
+    if (err) {
+      if (err.message.includes("The specified bucket does not exist")) {
+        res.status(404).send({ Result: `Bucket ${bucketName} does not exist` });
+      } else if (err.message.includes("The specified key does not exist")) {
+        res.status(404).send({ Result: `${objectKey} does not exists` })
+      } else if (err.message.includes("The specified key does not exist")) {
+        res.status(404).send({ Result: `Folder ${folderPath} does not exists` });
+      } else if (err.message.includes("The storage class you specified is not valid")) {
+        res.status(400).send({ Result: `Invalid storage class` })
+      } else {
+        res.status(500).send({ Result: 'Error renaming object', err });
+      }
+    } else {
+      res.send({ Result: `Successfully changed storage class for ${objectKey}` });
+    }
+  });
+});
+
+// Get available storage classes
+exports.router.post('/getAvailableStorage', function (req, res) {
+  const availableClasses = [];
+  availableClasses.push('STANDARD', 'INTELLIGENT_TIERING', 'STANDARD_IA', 'ONEZONE_IA', 'GLACIER', 'GLACIER_IR', 'DEEP_ARCHIVE');
+  res.send({ Result: availableClasses });
+});
