@@ -59,7 +59,7 @@ exports.router.post('/deleteUser',async(req,res)=>{
                 audience: 'api://default',
               });
 
-oktaClient.oauth.accessToken
+
               const oktaauth = new authClient.OktaAuth({
                 orgUrl: oktaOrgUrl,
                 issuer: 'https://dev-99932483.okta.com/oauth2/default',
@@ -94,9 +94,53 @@ oktaClient.oauth.accessToken
   }
 });
 
+exports.router.post('/getcredentialssso',async(req,res)=>{
+
+  const startUrl = 'https://awsclouddba.awsapps.com/start#/';
+const acsUrl = 'https://us-east-1.signin.aws.amazon.com/platform/saml/acs/d99d4c12-912f-47c5-be29-8014a06b2547';
+const signInUrl = 'https://dev-99932483.okta.com/app/amazon_aws_sso/exk91fv3nbxpFiO315d7/sso/saml';
+const issuerUrl = 'https://us-east-1.signin.aws.amazon.com/platform/saml/d-90677f5a16';
+const signOutUrl = 'https://dev-99932483.okta.com';
+
+
+
+const params = {
+  accessToken: '7a521649-eafa-4ff8-8e9a-720c5cbd5afc',
+  accountId: '977258277033',
+  roleName: 'us-east-1' // Replace with your region
+};
+
+const sso = new AWS.SSO({ region: 'us-east-1' }); // Replace with your region
+const sts = new AWS.STS({ region: 'us-east-1' }); 
+
+sso.getRoleCredentials(params, (err, data) => {
+  if (err) {
+    console.error(err);
+    res.send(err.message)
+  } else {
+    const roleArn = data.roleCredentials.RoleArn;
+    const accessKeyId = data.roleCredentials.accessKeyId;
+    const secretAccessKey = data.roleCredentials.secretAccessKey;
+    const sessionToken = data.roleCredentials.sessionToken;
+    const durationSeconds = 3600;
+    let s={
+      roleArn,accessKeyId,secretAccessKey,sessionToken,durationSeconds
+    }
+    res.send(s);
+  }
+
+
+});
+
+})
+
+
+
 
 exports.router.post('/generateSmalassertion',async(req,res)=>{
  try {
+  const oktaUsername = 'vigneshshanmugam9@gmail.com';
+        const oktaPassword = 'Vignesh@9';
    const oktaOrgUrl = 'https://dev-99932483.okta.com';
    const oktaApiClientToken = '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd';
    const oktaClient = new okta.Client({
@@ -108,6 +152,22 @@ exports.router.post('/generateSmalassertion',async(req,res)=>{
      scopes: ['openid', 'profile', 'email'],
      audience: 'api://default',
    });
+  const app=await oktaClient.getApplication('0oa91fv3ncEaofktD5d7')
+
+      const oktaCredentials = {
+          username: oktaUsername,
+          password: oktaPassword
+        };
+
+const sign=await axios.post('https://dev-99932483.okta.com/app/amazon_aws_sso/exk91fv3nbxpFiO315d7/sso/saml',oktaCredentials).then((err,data)=>{
+if(err){console.log(err.message);
+return err;}
+else{
+  console.log(data);
+  return data;
+}
+})
+
 //  const a= new oktaClient.oauth.accessToken;      
  const s= await authClient.authenticate({
   orgUrl: oktaOrgUrl,
