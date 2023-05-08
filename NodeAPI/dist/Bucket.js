@@ -9,12 +9,6 @@ const s3control = require("@aws-sdk/client-s3-control")
 
 //import { ListBucketsCommand,DeleteBucketCommand,CreateBucketCommand, S3Client } from "@aws-sdk/client-s3";
 
-const AWS = require('aws-sdk');
-
-const s3 = new AWS.S3({
-    accessKeyId: 'AKIA6HCJB5CUWQJCY3FQ',
-    secretAccessKey: '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'
-});
 const client = new s3Conn.S3Client({
     region: 'us-east-1',
     credentials: {
@@ -480,61 +474,7 @@ exports.router.post('/objectVersions', async (req, res) => {
 
 });
 
-// Copy Object from source bucket to the destination bucket
 
-exports.router.post('/copyobject', async (req, res) => {
-    const payload = req.body;
-
-    const listObjectParams = {
-        Bucket: payload.sourceBucket,
-        Prefix: payload.folderName
-    }
-    try {
-        s3.listObjectsV2(listObjectParams, async (err, data) => {
-            if (err) {
-                var error = {
-                    Error: err.code
-                };
-                res.send({ Result: error });
-            }
-            else {
-                (data.Contents.forEach(async (object) => {
-                    const copyObjectParams = {
-                        Bucket: payload.destinationBucket,
-                        CopySource: `${payload.sourceBucket}/${object.Key}`,
-                        Key: `${payload.folderName}${object.Key.replace(payload.folderName, '')}`
-                    };
-                    await s3.copyObject(copyObjectParams, (err, data) => {
-                        if (err) {
-
-                            var error = {
-                                Error: err.code
-                            };
-                            res.send({ Result: error });
-
-                        } else {
-                            var obj = {
-                                CopySourceVersionId: data.CopySourceVersionId,
-                                VersionId: data.VersionId,
-                                ServerSideEncryption: data.ServerSideEncryption,
-                                ETag: data.CopyObjectResult.ETag,
-                                LastModified: data.CopyObjectResult.LastModified.toUTCString()
-                            };
-                            res.send({ Result: obj });
-                        }
-                    }).promise();
-                }));
-            }
-        })
-    } catch (err) {
-        var error = {
-            Error: err.code
-        }
-        res.send({ Result: error });
-
-    }
-
-})
 
 
 

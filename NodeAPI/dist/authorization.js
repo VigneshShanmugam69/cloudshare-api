@@ -8,6 +8,7 @@ const ejs = require('ejs');
 const keytar = require('keytar');
 const okta = require('@okta/okta-sdk-nodejs');
 const jwt = require('jsonwebtoken');
+const helper = require('./helper/jwt')
 exports.router = (0, express_1.Router)();
 const credentials = new AWS.SharedIniFileCredentials();
 AWS.config.credentials = credentials;
@@ -284,7 +285,7 @@ exports.router.put('/updateLocalUser', async (req, res) => {
 });
 
 // List all locally created users
-exports.router.get('/listLocalUsers', verifyJwtToken, async (req, res) => {
+exports.router.get('/listLocalUsers', helper.verifyJwtToken, async (req, res) => {
 
     var sql = "select users.*,role.Role from users inner join role on role.ID = users.RoleID ";
     const connection = await (connect.connect)();
@@ -335,8 +336,8 @@ exports.router.put('/resetPasswordByFirstLogin', async (req, res) => {
 async function authenticateOktaUser(username, password) {
 
     const authClient = new okta.Client({
-        orgUrl: 'https://dev-70779564.okta.com',
-        token: '009lQeaB5h1DMGLtbuyVMTNfCruR2ABLhgA3lhIkMw'
+        orgUrl: 'https://dev-99932483.okta.com',
+        token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd'
     });
     const createSessionRequest = {
         username: username,
@@ -391,48 +392,21 @@ exports.router.post('/auth', async (req, res) => {
     res.send(result);
 });
 exports.router.post('/verifyauth', async (req, res) => {
-    var response = await verifyJwtToken(req);
+    var response = await helper.verifyJwtToken(req);
     res.send(response);
 });
 
 async function createJwtToken(Username, Password) {
     var result = await authenticateOktaUser(Username, Password);
     if (result.status == 1) {
-        const secret_key = 'CloudShare';
-        var token = jwt.sign(result.userdetails, secret_key);
-        let obj = {
-            "status": 1,
-            "message": "Logged in successfully",
-            "token": token
-        }
-        return obj;
+        var token = await helper.createJwtToken(result.userdetails);
+        //var token = jwt.sign(result.userdetails, secret_key);
+        return token;
     }
     else {
         return result;
     }
 }
-
-function verifyJwtToken(req, res, next) {
-    const secret_key = 'CloudShare';
-    const bearer = req.headers.token.split(' ')[0];
-    const authToken = req.headers.token.split(' ')[1];
-    if (bearer == "Bearer") {
-        jwt.verify(authToken, secret_key, (err, decodedToken) => {
-            if (err) {
-                res.status(401).send(err.message);
-            }
-            else {
-                //req.user = decodedToken;
-                next();
-            }
-        });
-    }
-    else {
-        res.send("Invalid token");
-    }
-}
-
-
 
 exports.router.get('/listUsers', async (req, res) => {
     try {
