@@ -32,9 +32,9 @@ exports.router.post('/properties', async (req, res) => {
   //const filetypes = await typefile();
   const region = await bucketLocation();
 
-    Promise.all([{
+  Promise.all([{
     owner, bucketName, bucketVersion, tranferAcceleration, serversideEncryption,
-    getBucketRequestPayment, bucketmodificationDate, region,  bucketLogging
+    getBucketRequestPayment, bucketmodificationDate, region, bucketLogging
   }])
     .then(results => res.send(results));
 
@@ -43,7 +43,7 @@ exports.router.post('/properties', async (req, res) => {
   //   serversideEncryption, getBucketRequestPayment, bucketmodificationDate, region, bucketReplication, storageType,
   // })
 
-//To get owner of the bucket 
+  //To get owner of the bucket 
   function getBucketAcl() {
     return new Promise((resolve, reject) => {
       s3.getBucketAcl(params, (err, data) => {
@@ -54,12 +54,12 @@ exports.router.post('/properties', async (req, res) => {
         else {
           const owner = data.Owner;
           resolve(owner.DisplayName);
-         
+
         }
       });
     })
   }
-//To get  name of the bucket
+  //To get  name of the bucket
   function getBucketName() {
     return new Promise((resolve, reject) => {
       s3.listBuckets((err, data) => {
@@ -68,7 +68,7 @@ exports.router.post('/properties', async (req, res) => {
         } else {
           const bucket = data.Buckets.find(bucket => bucket.Name === params.Bucket);
           resolve(` ${bucket.Name}`);
-         
+
         }
       });
 
@@ -185,29 +185,17 @@ exports.router.post('/properties', async (req, res) => {
   }
 });
 
+//This Api for to calculate total number of folder
 
-
-exports.router.post('/storage', async (req, res) => {
-  //const payload=req.body;
-  const params = {
-    Bucket: req.body.Bucket
-
-  };
-
+exports.router.post('/totalfolder', async (req, res) => {
   const params1 = {
     Bucket: req.body.Bucket,
     Prefix: '',
     Delimiter: '/',
 
   }
-
-  const totalFolder = await gettotalfolder();
-  const totalObject = await noobj();
-  const totalFileSize = await getTotalSize();
-  const storageType = await bucketstorageclass();
-  res.send({ totalFolder, totalObject, totalFileSize, storageType })
-
-  // calculate total number of folder in a bucket
+  const TotalFolder = await gettotalfolder();
+  res.send({ TotalFolder })
 
   function gettotalfolder() {
 
@@ -224,7 +212,17 @@ exports.router.post('/storage', async (req, res) => {
 
     })
   }
-  // Get total number of object in a bucket
+})
+
+//This Api for to calculate total number of object
+exports.router.post('/totalobject', async (req, res) => {
+  const params = {
+    Bucket: req.body.Bucket
+
+  };
+
+  const TotalObject = await noobj();
+  res.send({ TotalObject })
   function noobj() {
     return new Promise((resolve, reject) => {
       s3.listObjectsV2(params, (err, data) => {
@@ -238,7 +236,19 @@ exports.router.post('/storage', async (req, res) => {
     }
     )
   }
-  //calculate total fileSize of bucket objects
+
+})
+
+//calculate total fileSize of bucket objects
+
+exports.router.post('/totalfilesize', async (req, res) => {
+  const params = {
+    Bucket: req.body.Bucket
+
+  };
+  const TotalfileSize = await getTotalSize()
+  res.send({ TotalfileSize })
+
   function getTotalSize() {
     return new Promise((resolve, reject) => {
       let totalSize = 0;
@@ -267,8 +277,17 @@ exports.router.post('/storage', async (req, res) => {
       listObjects(params);
     })
   }
-  // To find bucket storage class 
-  function bucketstorageclass() {
+})
+
+// To find bucket storage class 
+exports.router.post('/storageclass', async (req, res) => {
+  const params = {
+    Bucket: req.body.Bucket
+
+  };
+  const Storageclass = await storageclass()
+  res.send({ Storageclass })
+  function storageclass() {
     return new Promise((resolve, reject) => {
       s3.getBucketLifecycleConfiguration(params, (err, data) => {
         if (err) {
@@ -283,6 +302,4 @@ exports.router.post('/storage', async (req, res) => {
     }
     )
   }
-
-
 })
