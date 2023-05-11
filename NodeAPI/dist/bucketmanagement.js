@@ -25,17 +25,19 @@ exports.router.post('/bucketreplication', async (req, res) => {
    function bucketreplication() {
     return new Promise((resolve, reject) => {
       s3.getBucketReplication({ Bucket: params.Bucket }, (err, data) => {
+        let list = [];
         if (err) {
           let status = {
-            "Message": "no bucket Replication",
+            "Message": "No BucketReplication",
           }
+      list.push(status)
 
-          resolve(status);
+          resolve(list);
         }
         else 
         {
           let a = data.ReplicationConfiguration.Rules
-          let list = [];
+          
           for (var i = 0; i < a.length; i++) {
           let output = {
               "ReplicationRoles": data.ReplicationConfiguration.Role,
@@ -69,17 +71,19 @@ exports.router.post('/BucketLifecycle', async (req, res) => {
   function listBucketLifecycle() {
     return new Promise((resolve, reject) => {
       s3.getBucketLifecycleConfiguration(params, function (err, data) {
+        let list = [];
         if (err) 
         {
           let status = {
-            "message": "no BucketLifecycle",
+            "message": "No BucketLifecycle",
           }
-          resolve(status);
+          list.push(status)
+          resolve(list);
         } 
         else 
         {
           let a = data.Rules
-          let list = [];
+         
           for (var i = 0; i < a.length; i++) {
             let result = {
               "BucketLifecycleID": data.Rules[i].ID,
@@ -113,7 +117,7 @@ exports.router.post('/BucketInventory', async (req, res) => {
       s3.listBucketInventoryConfigurations(params, function (err, data) {
         if (err) {
           let status = {
-            "message": "no InventoryConfigurationList"
+           "message": "No InventoryConfigurationList"
           }
           resolve(status)
         } else {
