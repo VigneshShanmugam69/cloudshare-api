@@ -33,6 +33,7 @@ exports.router.get('/listbuckets', async (req, res) => {
     try {
         const { Owner, Buckets } = await client.send(command);
         res.send(Buckets)
+        
     } catch (err) {
         res.send(err);
     }
