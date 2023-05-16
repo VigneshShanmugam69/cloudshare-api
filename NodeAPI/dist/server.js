@@ -13,7 +13,7 @@ const properties=require("./properties");
 const systemWallet = require('./systemwallet');
 const ssoConfig = require('./sso');
 const objectMenu = require('./objectmenu');
-const azure = require("./azureAuth");
+// const azure = require("./azureAuth");
 
 const app = express();
 const bucketmanagement =require('./bucketmanagement')
@@ -30,7 +30,7 @@ app.use(systemWallet.router);
 app.use(ssoConfig.router);
 app.use(objectMenu.router);
 app.use(bucketmanagement.router);
-app.use(azure.router);
+// app.use(azure.router);
 app.listen(4201, () => {
     return console.log('CloudShare server started...');
 });

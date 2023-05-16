@@ -97,7 +97,12 @@ exports.router.post('/listGroupUsers', async (req, res) => {
             var groupId;
             await authClient.listGroups({ q: name }).each(group => { groupId = (group.id); });
             const groupusers = authClient.listGroupUsers(groupId);
-            await groupusers.each(user => { users.push(user.profile); });
+            await groupusers.each(user => { users.push({
+                firstName: user.profile.firstName,
+                lastName:user.profile.lastName,
+                email:user.profile.email,
+                userId:user.id
+            }); });
         }
         let obj = {
             "status": 1,
