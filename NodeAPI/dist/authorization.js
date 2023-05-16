@@ -514,8 +514,8 @@ exports.router.post('/removefromgroup', async (req, res) => {
       }); 
 
       const result = await oktaClient.removeUserFromGroup(
-        groupId = '00g8tq4c8fdkgGFvF5d7',
-        userId = '00u8eruhh9CiehWSR5d7'
+        groupId = req.body.groupId,
+        userId = req.body.userId
       );
 
       let response = {
@@ -527,7 +527,7 @@ exports.router.post('/removefromgroup', async (req, res) => {
     } catch (error) {
       let response = {
         "status": 2,
-        "message": error.message
+        "message": 'User or User group not found'
       }
       res.send(response)
     }

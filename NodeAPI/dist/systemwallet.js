@@ -56,7 +56,7 @@ exports.router.post('/getUserGroups', async (req, res) => {
         const groups = [];
         const userId = req.body.userId;
         authClient.listUserGroups(userId)
-            .each(group => { groups.push(group.profile); })
+            .each(group => { groups.push({ groupName: group.profile.name, groupId: group.id }); })
             .then(() => res.send(groups))
     }
     catch (error) {
@@ -64,7 +64,7 @@ exports.router.post('/getUserGroups', async (req, res) => {
     }
 });
 
-exports.router.post('/getAllGroups', async (req, res) => {
+exports.router.get('/getAllGroups', async (req, res) => {
     try {
         const authClient = new okta.Client({
             orgUrl: 'https://dev-99932483.okta.com',
@@ -74,7 +74,7 @@ exports.router.post('/getAllGroups', async (req, res) => {
         });
         const userGroups = [];
         authClient.listGroups()
-            .each(group => { userGroups.push(group.profile); })
+            .each(group => { userGroups.push({ groupName: group.profile.name, groupId: group.id }); })
             .then(() => res.send(userGroups))
     }
     catch (error) {
