@@ -18,16 +18,9 @@ exports.router.post('/copyobject', async (req, res) => {
     const destinationBucket = payload.destinationBucket;
     const destinationKeyName = payload.destinationKeyName;
     const listObject = await list(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName);
-
-    try {
-        res.send(listObject);
-    } catch (err) {
-        var error = {
-            Error: err.code
-        }
-        res.send({ Result: error });
-    }
+    res.send(listObject);
 })
+
 function list(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName) {
     return new Promise(async (resolve, reject) => {
         const listObjectParams = {
@@ -36,10 +29,7 @@ function list(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName
         }
         s3.listObjectsV2(listObjectParams, async (err, data) => {
             if (err) {
-                var error = {
-                    Error: err.code
-                };
-                resolve({ Result1: error });
+                resolve({ Result: err.code });
             }
             else {
                 (data.Contents.forEach(async (object) => {
@@ -52,7 +42,7 @@ function list(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName
 
                             s3.listObjectsV2(params, function (err, value) {
                                 if (err) {
-                                    resolve.err
+                                    resolve({ Result: err.code });
                                 } else {
                                     if (params.Prefix) {
                                         resolve(`${destinationKeyName}/${object.Key}${object.Key.replace(sourceKeyName, '')}`);
@@ -75,21 +65,18 @@ function list(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName
                     };
                     s3.copyObject(copyObjectParams, (err, data) => {
                         if (err) {
-                            var error = {
-                                Error: err.code
-                            };
-                            resolve({ Result: error });
-
+                            resolve({ Result: err.code });
                         } else {
-                            var obj = {
-                                CopySourceVersionId: data.CopySourceVersionId,
-                                VersionId: data.VersionId,
-                                ServerSideEncryption: data.ServerSideEncryption,
-                                ETag: data.CopyObjectResult.ETag,
-                                LastModified: data.CopyObjectResult.LastModified.toUTCString()
-                            };
+                            // var obj = {
+                            //     // CopySourceVersionId: data.CopySourceVersionId,
+                            //     // VersionId: data.VersionId,
+                            //     // ServerSideEncryption: data.ServerSideEncryption,
+                            //     // ETag: data.CopyObjectResult.ETag,
+                            //     // LastModified: data.CopyObjectResult.LastModified.toUTCString()
 
-                            resolve({ Result: obj });
+                            // };
+
+                            resolve({ Result: "Copied Successfully" });
                         }
                     })
                 }))
@@ -102,20 +89,13 @@ function list(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName
 // Move folder and the object from source bucket to destination bucket
 
 exports.router.post('/moveObject', async (req, res) => {
-    try {
-        const payload = req.body
-        const copyObject = await copy(payload.sourceBucket, payload.sourceKeyName, payload.destinationBucket, payload.destinationKeyName)
-        const deleteObject = await deleteObjects(payload.sourceBucket, payload.sourceKeyName)
-        res.send({ Result: copyObject });
 
-    } catch (err) {
-        let obj = {
-            Error: err.Code
-        }
-        res.send({ Result: obj })
-    }
-
+    const payload = req.body
+    const copyObject = await copy(payload.sourceBucket, payload.sourceKeyName, payload.destinationBucket, payload.destinationKeyName)
+    const deleteObject = await deleteObjects(payload.sourceBucket, payload.sourceKeyName)
+    res.send(copyObject);
 })
+
 function copy(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName) {
     return new Promise(async (resolve, reject) => {
         const listObjectParams = {
@@ -126,10 +106,7 @@ function copy(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName
             return new Promise(async (resolve, reject) => {
                 s3.listObjectsV2(listObjectParams, async (err, data) => {
                     if (err) {
-                        var error = {
-                            Error: err.code
-                        }
-                        resolve(error);
+                        resolve({ Result: err.code });
                     }
                     else {
                         (data.Contents.forEach(async (object) => {
@@ -143,7 +120,7 @@ function copy(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName
 
                                     s3.listObjectsV2(params, function (err, value) {
                                         if (err) {
-                                            resolve.err
+                                            resolve({ Result: err.code });
                                         } else {
                                             if (params.Prefix) {
                                                 resolve(`${destinationKeyName}/${object.Key}${object.Key.replace(sourceKeyName, '')}`);
@@ -164,21 +141,11 @@ function copy(sourceBucket, sourceKeyName, destinationBucket, destinationKeyName
                             };
                             s3.copyObject(copyObjectParams, (err, data) => {
                                 if (err) {
-
-                                    var error = {
-                                        Error: err.code
-                                    };
-                                    resolve(error);
+                                    resolve({ Result: err.code });
 
                                 } else {
-                                    var obj = {
-                                        CopySourceVersionId: data.CopySourceVersionId,
-                                        VersionId: data.VersionId,
-                                        ServerSideEncryption: data.ServerSideEncryption,
-                                        ETag: data.CopyObjectResult.ETag,
-                                        LastModified: data.CopyObjectResult.LastModified.toUTCString()
-                                    };
-                                    resolve(obj);
+
+                                    resolve({ Result: "Moved Successfully" });
                                 }
                             })
                         }))
@@ -199,10 +166,7 @@ function deleteObjects(sourceBucket, sourceKeyName) {
         }
         s3.listObjectsV2(listObjectParams, async (err, data) => {
             if (err) {
-                var error = {
-                    Error: err.code
-                };
-                resolve(error);
+                resolve({ Result: err.code });
             }
             else {
                 (data.Contents.forEach(async (object) => {
@@ -212,12 +176,9 @@ function deleteObjects(sourceBucket, sourceKeyName) {
                     };
                     s3.deleteObject(deleteObjectParams, (err, data) => {
                         if (err) {
-                            var error = {
-                                Error: err.code
-                            }
-                            resolve(error);
+                            resolve({ Result: err.code });
                         } else {
-                            resolve("Object deleted");
+                            resolve({ Result: "Object deleted" });
                         }
                     })
                 }))

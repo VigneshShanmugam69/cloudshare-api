@@ -5,7 +5,7 @@ const ejs = require('ejs');
 const generator = require('generate-password');
 const keytar = require('keytar');
 const okta = require('@okta/okta-sdk-nodejs');
-const mail=require('./email');
+const mail = require('./email');
 exports.router = (0, express_1.Router)();
 
 exports.router.post('/storeTheCredential', async (req, res) => {
@@ -83,7 +83,7 @@ exports.router.post('/getAllGroups', async (req, res) => {
 });
 
 // List all users from group
-exports.router.post('/listGroupUsers',async(req,res)=>{
+exports.router.post('/listGroupUsers', async (req, res) => {
     try {
         const authClient = new okta.Client({
             orgUrl: 'https://dev-99932483.okta.com',
@@ -91,21 +91,33 @@ exports.router.post('/listGroupUsers',async(req,res)=>{
             token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd',
             redirectUri: 'http://127.0.0.1:4201/callback'
         });
-        const groupname = req.body.groupname;
-        var groupId;
-        await authClient.listGroups({ q: groupname }).each(group => { groupId = (group.id); });
-        const groupusers = authClient.listGroupUsers(groupId);
+        const groupName = req.body.groupName;
         const users = [];
-        await groupusers.each(user => { users.push(user.profile); });
-        res.send(users);
+        for (const name of groupName) {
+            var groupId;
+            await authClient.listGroups({ q: name }).each(group => { groupId = (group.id); });
+            const groupusers = authClient.listGroupUsers(groupId);
+            await groupusers.each(user => { users.push(user.profile); });
+        }
+        let obj = {
+            "status": 1,
+            "message": "users found",
+            "response": users
+        }
+        res.send(obj);
     }
     catch (error) {
-        res.send(error);
+        let obj = {
+            "status": 0,
+            "message": "user not found",
+            "response": error.message
+        }
+        res.send(obj);
     }
 });
 
 //Sync all users from one group to local database
-exports.router.post('/syncUserToApplication',async(req,res)=>{
+exports.router.post('/syncUserToApplication', async (req, res) => {
     try {
         const authClient = new okta.Client({
             orgUrl: 'https://dev-99932483.okta.com',

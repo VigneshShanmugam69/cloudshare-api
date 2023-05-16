@@ -2,7 +2,7 @@
 
 const express = require("express");
 const dbconnection = require("./dbconnection");
-exports.router = (0, express.Router)();
+exports.router = (express.Router)();
 const s3Conn = require("@aws-sdk/client-s3");
 const { createScanner } = require("typescript");
 const s3control = require("@aws-sdk/client-s3-control")
@@ -33,6 +33,7 @@ exports.router.get('/listbuckets', async (req, res) => {
     try {
         const { Owner, Buckets } = await client.send(command);
         res.send(Buckets)
+        
     } catch (err) {
         res.send(err);
     }
