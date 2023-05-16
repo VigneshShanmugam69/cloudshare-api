@@ -1,7 +1,14 @@
 const express_1 = require("express");
 exports.router = (0, express_1.Router)();
+const connect = require('./dbconnection');
 const AWS = require('aws-sdk');
-
+const kms = new AWS.KMS({
+  region: 'us-east-1',
+  credentials: {
+    accessKeyId: 'AKIA6HCJB5CUWQJCY3FQ',
+    secretAccessKey: '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'
+  }
+});
 const s3 = new AWS.S3({
   accessKeyId: 'AKIA6HCJB5CUWQJCY3FQ',
   secretAccessKey: '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'
@@ -174,8 +181,150 @@ exports.router.post('/editStorageClass', function (req, res) {
 });
 
 // Get available storage classes
-exports.router.post('/getAvailableStorage', function (req, res) {
-  const availableClasses = [];
-  availableClasses.push('STANDARD', 'INTELLIGENT_TIERING', 'STANDARD_IA', 'ONEZONE_IA', 'GLACIER', 'GLACIER_IR', 'DEEP_ARCHIVE');
-  res.send({ Result: availableClasses });
+exports.router.get('/getAvailableStorage', async (req, res) => {
+  var sql = "SELECT * FROM storageclasses WHERE Status = 1";
+  const connection = await (connect.connect)();
+  const storageClasses = await connection.query(sql);
+  let obj = {
+    "status": 1,
+    "message": "Storage classes found",
+    "result": storageClasses[0]
+  }
+  res.send(obj);
 });
+
+// Get meta data types
+exports.router.get('/getMetaDatatypes', async (req, res) => {
+  var sql = "SELECT * FROM MetadataTypes WHERE Status = 1;";
+  const connection = await (connect.connect)();
+  const types = await connection.query(sql);
+  let obj = {
+    "status": 1,
+    "message": "Metadata types found",
+    "result": types[0]
+  }
+  res.send(obj);
+});
+
+// Get system defined Keys
+exports.router.get('/getSystemDefinedKeys', async (req, res) => {
+  const payload = req.body;
+  const MetadataTypeID = payload.metadataTypeID;
+  if (MetadataTypeID === 1) {
+    var sql = "SELECT * FROM MetadataKeys WHERE MetadataTypeID = 1 AND Status = 1;"
+    const connection = await (connect.connect)();
+    const MetadataKeys = await connection.query(sql);
+    let obj = {
+      "status": 1,
+      "message": "System defined keys found",
+      "result": MetadataKeys[0]
+    }
+    res.send(obj);
+  }
+  else {
+    let obj = {
+      "status": 2,
+      "message": "Invalid metadata type id"
+    }
+    res.send(obj);
+  }
+});
+
+// Get content-type values
+exports.router.get('/getContentTypeValues', async (req, res) => {
+  const payload = req.body;
+  const metadata = payload.metadataTypeID;
+  const systemDefined = payload.systemDefinedKeyID;
+  if (metadata === 1) {
+    if (systemDefined === 1) {
+      var sql = "SELECT ctp.ID, mt.Type, mk.SystemDefinedKey, ctp.Value \
+      FROM ContentTypeValues ctp  \
+      INNER JOIN MetadataTypes mt ON mt.ID = ctp.MetadataTypeID \
+      INNER JOIN MetadataKeys mk ON mk.ID = ctp.SystemDefinedKeyID"
+      const connection = await (connect.connect)();
+      const MetadataKeys = await connection.query(sql);
+      let obj = {
+        "status": 1,
+        "message": "System defined keys found",
+        "result": MetadataKeys[0]
+      }
+      res.send(obj);
+    } else {
+      let obj = {
+        "status": 2,
+        "message": "Invalid system defined key id"
+      }
+      res.send(obj);
+    }
+  }
+  else {
+    let obj = {
+      "status": 0,
+      "message": "Invalid metadata Type id"
+    }
+    res.send(obj);
+  }
+});
+
+
+// Edit object metadata 
+exports.router.post('/addUserDefinedMetadata', function (req, res) {
+  const payload = req.body;
+  const bucketName = payload.bucketName;
+  const folderPath = payload.folderPath;
+  const objectKey = folderPath + payload.objectKey;
+  const key = payload.userDefinedKey;
+  const userValue = payload.userDefinedValue;
+
+  const getObjectMetadataParams = {
+    Bucket: bucketName,
+    Key: objectKey
+  };
+  // To list existing user defined metadata 
+  s3.headObject(getObjectMetadataParams, function (err, data) {
+    if (err) {
+      if (err.code === 'NotFound') {
+        res.status(404).send({ Result: `Bucket ${bucketName} or ${objectKey} does not exist` });
+      } else {
+        res.status(500).send({ Result: 'Head object', err });
+      }
+    } else {
+      if (key != '') {
+        if (userValue != '') {
+          const existingMetadata = data.Metadata || {};
+          // Adding new user defined meta data
+          const newMetadata = {
+            [key]: userValue
+          };
+          // Listing existing metada and add the new metadata
+          const mergedMetadata = { ...existingMetadata, ...newMetadata };
+
+          const copyObjectParams = {
+            Bucket: bucketName,
+            CopySource: `${bucketName}/${objectKey}`,
+            Key: objectKey,
+            MetadataDirective: 'REPLACE',
+            Metadata: mergedMetadata // The Metadata stands for UserDefined
+          };
+
+          s3.copyObject(copyObjectParams, function (err, data) {
+            if (err) {
+              if (err.code === 'SignatureDoesNotMatch') {
+                res.status(400).send({ Result: 'You can add each metadata key only once.' })
+              } else {
+                res.status(500).send({ Result: 'Error adding metadata', err });
+              }
+            } else {
+              res.send({ Result: 'Metadata added successfully' });
+            }
+          });
+        } else {
+          res.status(400).send({ Result: 'A metadata value is required.' })
+        }
+      } else {
+        res.status(400).send({ Result: 'A metadata key is required.' })
+      }
+    }
+  });
+});
+
