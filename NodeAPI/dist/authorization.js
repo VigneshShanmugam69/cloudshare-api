@@ -432,3 +432,104 @@ exports.router.get('/listUsers', async (req, res) => {
         res.send(error.message);
     }
 });
+
+exports.router.get('/listLocalUser',async (req, res) => {
+
+    var sql = "select * from localusers";
+    const connection = await (connect.connect)();
+    const listUser = await connection.query(sql);
+    if (listUser[0]) {
+        let user=[];
+        for(i=0;i<listUser[0].length;i++){
+            user.push({
+                id:listUser[0][i].Id,
+                firstname:listUser[0][i].Firstname,
+                lastname:listUser[0][i].Lastname,
+                email:listUser[0][i].Email,
+                status:listUser[0][i].Status,
+                isfirst:listUser[0][i].IsFirst
+            });
+        }
+        let obj = {
+            "status": 1,
+            "users": user
+        }
+        res.send(obj);
+    }
+    else {
+        let obj = {
+            "status": 2,
+            "users": "Failed to get users"
+        }
+        res.send(obj);
+    }
+});
+
+
+
+exports.router.get('/listDirectoryUsers',async (req, res) => {
+
+    var sql = "select * from directoryusers";
+    const connection = await (connect.connect)();
+    const listUser = await connection.query(sql);
+    if (listUser[0]) {
+        let user=[];
+        for(i=0;i<listUser[0].length;i++){
+            user.push({
+                id:listUser[0][i].UserId,
+                firstname:listUser[0][i].Firstname,
+                lastname:listUser[0][i].Lastname,
+                email:listUser[0][i].Email,
+                status:listUser[0][i].Status,
+                ADGroup:listUser[0][i].ADGroup
+            });
+        }
+        let obj = {
+            "status": 1,
+            "users": user
+        }
+        res.send(obj);
+    }
+    else {
+        let obj = {
+            "status": 2,
+            "users": "Failed to get users"
+        }
+        res.send(obj);
+    }
+});
+
+//Remove user from OKTA Group
+exports.router.post('/removefromgroup', async (req, res) => {
+    try {
+      const oktaOrgUrl = 'https://dev-99932483.okta.com';
+      const oktaApiClientToken = '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd';
+      const oktaClient = new okta.Client({
+        orgUrl: oktaOrgUrl,
+        issuer: 'https://dev-99932483.okta.com/oauth2/default',
+        token: oktaApiClientToken,
+        redirectUri: 'http:/localhost:4201/',
+        scopes: ['openid', 'profile', 'email'],
+        audience: 'api://default',
+      }); 
+
+      const result = await oktaClient.removeUserFromGroup(
+        groupId = req.body.groupId,
+        userId = req.body.userId
+      );
+
+      let response = {
+        "status": 1,
+        "message": 'Removed successfully'
+      }
+
+      res.send(response)
+    } catch (error) {
+      let response = {
+        "status": 2,
+        "message": 'User or User group not found'
+      }
+      res.send(response)
+    }
+  });
+  
