@@ -97,12 +97,14 @@ exports.router.post('/listGroupUsers', async (req, res) => {
             var groupId;
             await authClient.listGroups({ q: name }).each(group => { groupId = (group.id); });
             const groupusers = authClient.listGroupUsers(groupId);
-            await groupusers.each(user => { users.push({
-                firstName: user.profile.firstName,
-                lastName:user.profile.lastName,
-                email:user.profile.email,
-                userId:user.id
-            }); });
+            await groupusers.each(user => {
+                users.push({
+                    firstName: user.profile.firstName,
+                    lastName: user.profile.lastName,
+                    email: user.profile.email,
+                    userId: user.id
+                });
+            });
         }
         let obj = {
             "status": 1,
@@ -167,3 +169,54 @@ exports.router.post('/syncUserToApplication', async (req, res) => {
         res.send(obj);
     }
 });
+
+
+exports.router.post('/importUsers', async (req, res) => {
+    try {
+        const authClient = new okta.Client({
+            orgUrl: 'https://dev-99932483.okta.com',
+            issuer: 'https://dev-99932483.okta.com/oauth2/default',
+            token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd',
+            redirectUri: 'http://127.0.0.1:4201/callback'
+        });
+        var groupId = req.body.groupId;
+        var userId = req.body.userId;
+        for (const groupid of groupId) {
+            const group = await authClient.getGroup(groupid)
+            var users = []
+            const a = await group.listUsers().each(user => {
+                users.push({
+                    id: user.id,
+                    firstname: user.profile.firstName,
+                    lastname: user.profile.lastName,
+                    email: user.profile.email,
+                    status: user.status
+                });
+            })
+            for (const user of userId) {
+                for (const userinfo of users) {
+                    if (userinfo.id == user) {
+                        const connection = await(connect.connect)();
+                            var sql = "INSERT INTO directoryusers (Firstname,Lastname,UserId,Email,Status,ADGroup) VALUES ?";
+                            var values = [[userinfo.firstname,userinfo.lastname,userinfo.id,userinfo.email,userinfo.status,group.profile.name]];
+                            await connection.query(sql, [values]);
+                    }
+                }
+            }
+        }
+
+        let obj = {
+            "status": 1,
+            "message": "Users imported successfully"
+        }
+        res.send(obj);
+    }
+    catch (err) {
+        let obj = {
+            "status": 2,
+            "message": "Failed to import user"
+        }
+        res.send(obj);
+    }
+});
+
