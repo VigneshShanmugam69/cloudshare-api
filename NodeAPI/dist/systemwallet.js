@@ -196,10 +196,22 @@ exports.router.post('/importUsers', async (req, res) => {
             for (const user of userId) {
                 for (const userinfo of users) {
                     if (userinfo.id == user) {
-                        const connection = await(connect.connect)();
+                        const connection = await (connect.connect)();
+                        var selectQuery = "select * from directoryusers where UserId=?";
+                        var userid = user;
+                        var userInfo = await connection.query(selectQuery, user);
+                        if (userInfo[0].length == 0) {
                             var sql = "INSERT INTO directoryusers (Firstname,Lastname,UserId,Email,Status,ADGroup) VALUES ?";
-                            var values = [[userinfo.firstname,userinfo.lastname,userinfo.id,userinfo.email,userinfo.status,group.profile.name]];
+                            var values = [[userinfo.firstname, userinfo.lastname, userinfo.id, userinfo.email, userinfo.status, group.profile.name]];
                             await connection.query(sql, [values]);
+                        }
+                        else {
+                            let groupNames=group.profile.name + ',' + userInfo[0][0].ADGroup;
+                            let updateQuery="update directoryusers set Firstname=?,Lastname=?,Email=?,Status=?,ADGroup=? where UserId=?";
+                            let values=[userinfo.firstname, userinfo.lastname, userinfo.email, userinfo.status, groupNames,userInfo[0][0].UserId];
+                            await connection.query(updateQuery,values);
+                        }
+
                     }
                 }
             }
