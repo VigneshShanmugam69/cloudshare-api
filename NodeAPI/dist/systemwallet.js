@@ -206,12 +206,13 @@ exports.router.post('/importUsers', async (req, res) => {
                             await connection.query(sql, [values]);
                         }
                         else {
-                            let groupNames=group.profile.name + ',' + userInfo[0][0].ADGroup;
-                            let updateQuery="update directoryusers set Firstname=?,Lastname=?,Email=?,Status=?,ADGroup=? where UserId=?";
-                            let values=[userinfo.firstname, userinfo.lastname, userinfo.email, userinfo.status, groupNames,userInfo[0][0].UserId];
-                            await connection.query(updateQuery,values);
+                            if (!userInfo[0][0].ADGroup.includes(group.profile.name)) {
+                                let groupNames = group.profile.name + ',' + userInfo[0][0].ADGroup;
+                                let updateQuery = "update directoryusers set Firstname=?,Lastname=?,Email=?,Status=?,ADGroup=? where UserId=?";
+                                let values = [userinfo.firstname, userinfo.lastname, userinfo.email, userinfo.status, groupNames, userInfo[0][0].UserId];
+                                await connection.query(updateQuery, values);
+                            }
                         }
-
                     }
                 }
             }
