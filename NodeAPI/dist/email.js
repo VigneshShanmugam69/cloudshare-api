@@ -2,16 +2,16 @@ const nodemailer = require('nodemailer');
 const ejs = require('ejs');
 const fs = require('fs')
 
-exports.mail= async function(email, password, firstname, username)  {
+exports.mail = async function (email, password, firstname) {
 
     const data = {
         name: firstname,
         passwrd: password,
-        username: username
+        username: email
     }
 
     // Read the HTML content file
-    fs.readFile('./templates/mailtemplate.ejs', 'utf8', async (err, template) => {
+    await fs.readFile('./templates/mailtemplate.ejs', 'utf8', async (err, template) => {
         if (err) {
             console.error(err);
             return;
@@ -42,7 +42,7 @@ exports.mail= async function(email, password, firstname, username)  {
 
 
         // Send mail to the newly created user
-        transporter.sendMail(mailOptions, function (error, info) {
+         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
                 return error;
             } else {

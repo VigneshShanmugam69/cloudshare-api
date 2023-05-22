@@ -9,6 +9,7 @@ const keytar = require('keytar');
 const okta = require('@okta/okta-sdk-nodejs');
 const jwt = require('jsonwebtoken');
 const helper = require('./helper/jwt')
+const mail = require('./email');
 exports.router = (0, express_1.Router)();
 const credentials = new AWS.SharedIniFileCredentials();
 AWS.config.credentials = credentials;
@@ -138,7 +139,7 @@ exports.router.delete('/deleteuser', (req, res) => {
     });
 });
 
-
+/*
 // Generate mail
 async function mail(email, password, firstname, username) {
 
@@ -185,6 +186,7 @@ async function mail(email, password, firstname, username) {
         });
     });
 }
+*/
 
 exports.router.post('/createLocalUser', async (req, res) => {
     try {
@@ -206,7 +208,7 @@ exports.router.post('/createLocalUser', async (req, res) => {
             await connection.query(sql, [values]);
 
             // Call mail function to send the mail to newly created user
-            await mail(email, password, firstName, userName);
+            await mail.mail(email, password, firstName);
 
             let obj = {
                 "status": 1,
@@ -433,21 +435,21 @@ exports.router.get('/listUsers', async (req, res) => {
     }
 });
 
-exports.router.get('/listLocalUser',async (req, res) => {
+exports.router.get('/listLocalUser', async (req, res) => {
 
     var sql = "select * from localusers";
     const connection = await (connect.connect)();
     const listUser = await connection.query(sql);
     if (listUser[0]) {
-        let user=[];
-        for(i=0;i<listUser[0].length;i++){
+        let user = [];
+        for (i = 0; i < listUser[0].length; i++) {
             user.push({
-                id:listUser[0][i].Id,
-                firstname:listUser[0][i].Firstname,
-                lastname:listUser[0][i].Lastname,
-                email:listUser[0][i].Email,
-                status:listUser[0][i].Status,
-                isfirst:listUser[0][i].IsFirst
+                id: listUser[0][i].Id,
+                firstname: listUser[0][i].Firstname,
+                lastname: listUser[0][i].Lastname,
+                email: listUser[0][i].Email,
+                status: listUser[0][i].Status,
+                isfirst: listUser[0][i].IsFirst
             });
         }
         let obj = {
@@ -467,21 +469,21 @@ exports.router.get('/listLocalUser',async (req, res) => {
 
 
 
-exports.router.get('/listDirectoryUsers',async (req, res) => {
+exports.router.get('/listDirectoryUsers', async (req, res) => {
 
     var sql = "select * from directoryusers";
     const connection = await (connect.connect)();
     const listUser = await connection.query(sql);
     if (listUser[0]) {
-        let user=[];
-        for(i=0;i<listUser[0].length;i++){
+        let user = [];
+        for (i = 0; i < listUser[0].length; i++) {
             user.push({
-                id:listUser[0][i].UserId,
-                firstname:listUser[0][i].Firstname,
-                lastname:listUser[0][i].Lastname,
-                email:listUser[0][i].Email,
-                status:listUser[0][i].Status,
-                ADGroup:listUser[0][i].ADGroup
+                id: listUser[0][i].UserId,
+                firstname: listUser[0][i].Firstname,
+                lastname: listUser[0][i].Lastname,
+                email: listUser[0][i].Email,
+                status: listUser[0][i].Status,
+                ADGroup: listUser[0][i].ADGroup
             });
         }
         let obj = {
@@ -502,34 +504,98 @@ exports.router.get('/listDirectoryUsers',async (req, res) => {
 //Remove user from OKTA Group
 exports.router.post('/removefromgroup', async (req, res) => {
     try {
-      const oktaOrgUrl = 'https://dev-99932483.okta.com';
-      const oktaApiClientToken = '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd';
-      const oktaClient = new okta.Client({
-        orgUrl: oktaOrgUrl,
-        issuer: 'https://dev-99932483.okta.com/oauth2/default',
-        token: oktaApiClientToken,
-        redirectUri: 'http:/localhost:4201/',
-        scopes: ['openid', 'profile', 'email'],
-        audience: 'api://default',
-      }); 
+        const oktaOrgUrl = 'https://dev-99932483.okta.com';
+        const oktaApiClientToken = '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd';
+        const oktaClient = new okta.Client({
+            orgUrl: oktaOrgUrl,
+            issuer: 'https://dev-99932483.okta.com/oauth2/default',
+            token: oktaApiClientToken,
+            redirectUri: 'http:/localhost:4201/',
+            scopes: ['openid', 'profile', 'email'],
+            audience: 'api://default',
+        });
 
-      const result = await oktaClient.removeUserFromGroup(
-        groupId = req.body.groupId,
-        userId = req.body.userId
-      );
+        const result = await oktaClient.removeUserFromGroup(
+            groupId = req.body.groupId,
+            userId = req.body.userId
+        );
 
-      let response = {
-        "status": 1,
-        "message": 'Removed successfully'
-      }
+        let response = {
+            "status": 1,
+            "message": 'Removed successfully'
+        }
 
-      res.send(response)
+        res.send(response)
     } catch (error) {
-      let response = {
-        "status": 2,
-        "message": 'User or User group not found'
-      }
-      res.send(response)
+        let response = {
+            "status": 2,
+            "message": 'User or User group not found'
+        }
+        res.send(response)
     }
-  });
-  
+});
+
+// Modified create user
+exports.router.post('/createLocalUsers', async (req, res) => {
+    try {
+
+        var firstName = req.body.firstname;
+        var lastName = req.body.lastname;
+        var email = req.body.email;
+        let password = req.body.password;
+
+        // Check the mail already exist or not
+        const connection = await (connect.connect)();
+        const userexists = await connection.query('select Email from localusers where Email=?', email);
+        if (!userexists[0][0]) {
+            
+            // Check the password provided or not
+            if (!password) {
+
+                // generate the the random password and save user into local database
+                var newPassword = generator.generate({ Number: true, length: 10 });
+                var sql = "INSERT INTO localusers (Firstname,Lastname,Email,Password,IsFirst,Status) VALUES ?";
+                var values = [[firstName, lastName, email, newPassword, true, 'Active']];
+                await connection.query(sql, [values]);
+
+                // Call mail function to send the mail to newly created user
+                await mail.mail(email,newPassword,firstName)
+
+                let obj = {
+                    "status": 1,
+                    "message": "User created successfully"
+                }
+                res.send(obj);
+            }
+            else {
+
+                // Insert the user into local database password provided users
+                var sql = "INSERT INTO localusers (Firstname,Lastname,Email,Password,IsFirst,Status) VALUES ?";
+                var values = [[firstName, lastName, email, password, false, 'Active']];
+                await connection.query(sql, [values]);
+
+
+                let obj = {
+                    "status": 1,
+                    "message": "User created successfully"
+                }
+                res.send(obj);
+            }
+
+        }
+        else {
+            let obj = {
+                "status": 2,
+                "message": "Email already exists"
+            }
+            res.send(obj);
+        }
+    }
+    catch (error) {
+        let obj = {
+            "status": 3,
+            "message": error
+        }
+        res.send(obj);
+    }
+});
