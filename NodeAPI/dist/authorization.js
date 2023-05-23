@@ -10,6 +10,7 @@ const okta = require('@okta/okta-sdk-nodejs');
 const jwt = require('jsonwebtoken');
 const helper = require('./helper/jwt')
 const mail = require('./email');
+const { format } = require('date-fns');
 exports.router = (0, express_1.Router)();
 const credentials = new AWS.SharedIniFileCredentials();
 AWS.config.credentials = credentials;
@@ -543,7 +544,12 @@ exports.router.post('/createLocalUsers', async (req, res) => {
         var lastName = req.body.lastname;
         var email = req.body.email;
         let password = req.body.password;
-
+        const currentDate = new Date();
+        const formattedDate = currentDate.toISOString('MM/dd/yyyy').slice(0, 19).replace('T', ' ');
+        // const formattedDate = currentDate.toISOString();
+        // const formattedDate =format(currentDate,'MM-dd-yyyy hh:mm');
+        // const formattedDate= `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
+      
         // Check the mail already exist or not
         const connection = await (connect.connect)();
         const userexists = await connection.query('select Email from localusers where Email=?', email);
@@ -554,12 +560,12 @@ exports.router.post('/createLocalUsers', async (req, res) => {
 
                 // generate the the random password and save user into local database
                 var newPassword = generator.generate({ Number: true, length: 10 });
-                var sql = "INSERT INTO localusers (Firstname,Lastname,Email,Password,IsFirst,Status) VALUES ?";
-                var values = [[firstName, lastName, email, newPassword, true, 'Active']];
+                var sql = "INSERT INTO localusers (Firstname,Lastname,Email,Password,IsFirst,Status,CreatedDate) VALUES ?";
+                var values = [[firstName, lastName, email, newPassword, true, 'Active',formattedDate]];
                 await connection.query(sql, [values]);
 
                 // Call mail function to send the mail to newly created user
-                await mail.mail(email,newPassword,firstName)
+                // await mail.mail(email,newPassword,firstName)
 
                 let obj = {
                     "status": 1,
@@ -570,8 +576,8 @@ exports.router.post('/createLocalUsers', async (req, res) => {
             else {
 
                 // Insert the user into local database password provided users
-                var sql = "INSERT INTO localusers (Firstname,Lastname,Email,Password,IsFirst,Status) VALUES ?";
-                var values = [[firstName, lastName, email, password, false, 'Active']];
+                var sql = "INSERT INTO localusers (Firstname,Lastname,Email,Password,IsFirst,Status,CreatedDate) VALUES ?";
+                var values = [[firstName, lastName, email, password, false, 'Active',formattedDate]];
                 await connection.query(sql, [values]);
 
 
@@ -586,7 +592,7 @@ exports.router.post('/createLocalUsers', async (req, res) => {
         else {
             let obj = {
                 "status": 2,
-                "message": "Email already exists"
+                "message": "User already exists"
             }
             res.send(obj);
         }
