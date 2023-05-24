@@ -6,6 +6,7 @@ const generator = require('generate-password');
 const keytar = require('keytar');
 const okta = require('@okta/okta-sdk-nodejs');
 const mail = require('./email');
+const { format } = require('date-fns');
 exports.router = (0, express_1.Router)();
 
 exports.router.post('/storeTheCredential', async (req, res) => {
@@ -97,12 +98,14 @@ exports.router.post('/listGroupUsers', async (req, res) => {
             var groupId;
             await authClient.listGroups({ q: name }).each(group => { groupId = (group.id); });
             const groupusers = authClient.listGroupUsers(groupId);
-            await groupusers.each(user => { users.push({
-                firstName: user.profile.firstName,
-                lastName:user.profile.lastName,
-                email:user.profile.email,
-                userId:user.id
-            }); });
+            await groupusers.each(user => {
+                users.push({
+                    firstName: user.profile.firstName,
+                    lastName: user.profile.lastName,
+                    email: user.profile.email,
+                    userId: user.id
+                });
+            });
         }
         let obj = {
             "status": 1,
@@ -122,7 +125,7 @@ exports.router.post('/listGroupUsers', async (req, res) => {
 });
 
 //Sync all users from one group to local database
-exports.router.post('/syncUserToApplication', async (req, res) => {
+exports.router.post('/importAllUsers', async (req, res) => {
     try {
         const authClient = new okta.Client({
             orgUrl: 'https://dev-99932483.okta.com',
@@ -130,32 +133,44 @@ exports.router.post('/syncUserToApplication', async (req, res) => {
             token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd',
             redirectUri: 'http://127.0.0.1:4201/callback'
         });
-        const groupname = req.body.groupname;
-        var groupId;
-        await authClient.listGroups({ q: groupname }).each(group => { groupId = (group.id); });
-        const groupusers = authClient.listGroupUsers(groupId);
-        const users = [];
-        await groupusers.each(user => { users.push(user.profile); });
-
-        // Sync users from OKTA to local database
+        const currentDate = new Date();
+        const formattedDate = format(currentDate, 'MM-dd-yyyy');
+        var groupId = req.body.groupId;
+        const group = await authClient.getGroup(groupId)
+        var users = []
+        await group.listUsers().each(user => {
+            users.push({
+                id: user.id,
+                firstname: user.profile.firstName,
+                lastname: user.profile.lastName,
+                email: user.profile.email,
+                status: user.status
+            });
+        })
         for (const user of users) {
-            var firstName = user.firstName;
-            var lastName = user.lastName;
-            var userName = user.login;
-            var email = user.email;
-            var roleID = 1; //user or admin
-            var password = generator.generate({ Number: true, length: 10 });
-
-            // connect the database and insert the new user details in user table
             const connection = await (connect.connect)();
-            var sql = "INSERT INTO users (Firstname,Lastname,Email,Username,RoleID,Password,IsFirst) VALUES ?";
-            var values = [[firstName, lastName, email, userName, roleID, password, true]];
-            await connection.query(sql, [values]);
-            await mail.mail(email, password, firstName, userName);
+            var selectQuery = "select * from directoryusers where UserId=?";
+            var userid = user.id;
+            var userInfo = await connection.query(selectQuery, userid);
+            if (userInfo[0].length == 0) {
+                var sql = "INSERT INTO directoryusers (Firstname,Lastname,UserId,Email,Status,ADGroup,CreatedDate) VALUES ?";
+                var values = [[user.firstname, user.lastname, user.id, user.email, user.status, group.profile.name, formattedDate]];
+                await connection.query(sql, [values]);
+            }
+            else {
+                if (!userInfo[0][0].ADGroup.includes(group.profile.name)) {
+                    let groupNames = group.profile.name + ',' + userInfo[0][0].ADGroup;
+                    let updateQuery = "update directoryusers set Firstname=?,Lastname=?,Email=?,Status=?,ADGroup=? where UserId=?";
+                    let values = [user.firstname, user.lastname, user.email, user.status, groupNames, userInfo[0][0].UserId];
+                    await connection.query(updateQuery, values);
+                }
+            }
+
         }
+
         let obj = {
             "status": 1,
-            "message": "User synced successfully"
+            "message": "Users imported successfully"
         }
         res.send(obj);
     }
@@ -167,3 +182,69 @@ exports.router.post('/syncUserToApplication', async (req, res) => {
         res.send(obj);
     }
 });
+
+
+exports.router.post('/importUsers', async (req, res) => {
+    try {
+        const authClient = new okta.Client({
+            orgUrl: 'https://dev-99932483.okta.com',
+            issuer: 'https://dev-99932483.okta.com/oauth2/default',
+            token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd',
+            redirectUri: 'http://127.0.0.1:4201/callback'
+        });
+        const currentDate = new Date();
+        const formattedDate = format(currentDate, 'MM-dd-yyyy');
+        var groupId = req.body.groupId;
+        var userId = req.body.userId;
+        for (const groupid of groupId) {
+            const group = await authClient.getGroup(groupid)
+            var users = []
+            const a = await group.listUsers().each(user => {
+                users.push({
+                    id: user.id,
+                    firstname: user.profile.firstName,
+                    lastname: user.profile.lastName,
+                    email: user.profile.email,
+                    status: user.status
+                });
+            })
+            for (const user of userId) {
+                for (const userinfo of users) {
+                    if (userinfo.id == user) {
+                        const connection = await (connect.connect)();
+                        var selectQuery = "select * from directoryusers where UserId=?";
+                        var userid = user;
+                        var userInfo = await connection.query(selectQuery, user);
+                        if (userInfo[0].length == 0) {
+                            var sql = "INSERT INTO directoryusers (Firstname,Lastname,UserId,Email,Status,ADGroup,CreatedDate) VALUES ?";
+                            var values = [[userinfo.firstname, userinfo.lastname, userinfo.id, userinfo.email, userinfo.status, group.profile.name, formattedDate]];
+                            await connection.query(sql, [values]);
+                        }
+                        else {
+                            if (!userInfo[0][0].ADGroup.includes(group.profile.name)) {
+                                let groupNames = group.profile.name + ',' + userInfo[0][0].ADGroup;
+                                let updateQuery = "update directoryusers set Firstname=?,Lastname=?,Email=?,Status=?,ADGroup=? where UserId=?";
+                                let values = [userinfo.firstname, userinfo.lastname, userinfo.email, userinfo.status, groupNames, userInfo[0][0].UserId];
+                                await connection.query(updateQuery, values);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let obj = {
+            "status": 1,
+            "message": "Users imported successfully"
+        }
+        res.send(obj);
+    }
+    catch (err) {
+        let obj = {
+            "status": 2,
+            "message": "Failed to import user"
+        }
+        res.send(obj);
+    }
+});
+
