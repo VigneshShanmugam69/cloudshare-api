@@ -328,60 +328,106 @@ exports.router.post('/addUserDefinedMetadata', function (req, res) {
   });
 });
 
-// Adds tags to an existing object.
-exports.router.post('/addObjectTag', function (req, res) {
+// Add and update the object tag.
+exports.router.post('/ObjectTag', function (req, res) {
   const payload = req.body;
   const bucketName = payload.bucketName;
-  const folderPath = payload.folderPath; 
-  const objectKey = folderPath + payload.objectKey; //Concat Folder path + object Name.
-  const newTag = { Key: payload.tagKey, Value: payload.tagValue };
+  const objectKey = payload.objectKey;
+  const indexToUpdate = payload.indexToUpdate;
+  const newKey = payload.newKey;
+  const newValue = payload.newValue;
 
   // Retrieve the existing object tags
   const getObjectTaggingParams = {
     Bucket: bucketName,
     Key: objectKey
   };
-
+  
   s3.getObjectTagging(getObjectTaggingParams, function (err, data) {
-    if (err) {     
-        if (err.code === 'NoSuchKey') {
-          res.status(404).send({ Result: `The object ${objectKey} does not exist`});
-        }
-        else if (err.code === 'NoSuchBucket') {
-          res.status(404).send({ Result: `The bucket ${bucketName} does not exist`});
-        }
-        else {
-          res.send({Result: 'Error listing object tag', err});
+    if (err) {
+      if (err.code === 'NoSuchKey') {
+        res.status(404).send({ Result: `The object ${objectKey} does not exist` });
+      }
+      else if (err.code === 'NoSuchBucket') {
+        res.status(404).send({ Result: `The bucket ${bucketName} does not exist` });
+      }
+      else {
+        res.send({ Result: 'Error listing object tag', err });
+      }
+    } else {
+      if (newKey != '') {
+        if (newValue != '') {
+          // Listing the existing tags
+          const existingTagSet = data.TagSet;
+          // Check if the index is within the range of the existing TagSet 
+          // if exists update the tag set
+          if (indexToUpdate >= 0 && indexToUpdate < existingTagSet.length) {
+            // Update the key and value at the specified index
+            existingTagSet[indexToUpdate].Key = newKey;
+            existingTagSet[indexToUpdate].Value = newValue;
+            // Update the object's tags with the modified TagSet
+            const putObjectTaggingParams = {
+              Bucket: bucketName,
+              Key: objectKey,
+              Tagging: {
+                TagSet: existingTagSet
+              }
+            };
+            s3.putObjectTagging(putObjectTaggingParams, function (err, data) {
+              if (err) {
+                if (err.message.includes("Cannot provide multiple Tags with the same key")) {
+                  res.status(404).send({ Result: "Keys must be unique." });
+                } else if (err.message.includes("Object tags cannot be greater than 10")) {
+                  res.status(400).send({ Result: "Object tags cannot be greater than 10" })
+                } else if (err.message.includes("The TagKey you have provided is invalid")) {
+                  res.status(400).send({ Result: "A tag key is required." })
+                } else {
+                  res.status(500).send({ Result: 'Error renaming object', err });
+                }
+              } else {
+                res.send({ Result: 'Successfully edited tags.' });
+              }
+            });
+            // Add new object tag
+          } else {
+            // Listing the existing tags. 
+            const existingTagSet = data.TagSet;
+            // Adding the new tag.     
+            const newTag = { Key: payload.newKey, Value: payload.newValue };
+            // Append the new tag to the existing TagSet  
+            const newTagSet = [...existingTagSet, newTag];
+            // Update the object's tags with the new TagSet
+            const putObjectTaggingParams = {
+              Bucket: bucketName,
+              Key: objectKey,
+              Tagging: {
+                TagSet: newTagSet
+              }
+            };
+            s3.putObjectTagging(putObjectTaggingParams, function (err, data) {
+              if (err) {
+                if (err.message.includes("Cannot provide multiple Tags with the same key")) {
+                  res.status(404).send({ Result: "Keys must be unique." });
+                } else if (err.message.includes("Object tags cannot be greater than 10")) {
+                  res.status(400).send({ Result: "Object tags cannot be greater than 10" })
+                } else if (err.message.includes("The TagKey you have provided is invalid")) {
+                  res.status(400).send({ Result: "A tag key is required." })
+                } else {
+                  res.status(500).send({ Result: 'Error renaming object', err });
+                }
+              } else {
+                res.send({ Result: 'Successfully edited tags.' });
+              }
+            });
+          }
+        } else {
+          res.send({ Result: "A tag Value is required." });
         }
       } else {
-        // Append the new tag to the existing TagSet  
-        const existingTagSet = data.TagSet;
-        const newTagSet = [...existingTagSet, newTag];
-
-        // Update the object's tags with the new TagSet
-        const putObjectTaggingParams = {
-          Bucket: bucketName,
-          Key: objectKey,
-          Tagging: {
-            TagSet: newTagSet
-          }
-        };
-
-        s3.putObjectTagging(putObjectTaggingParams, function (err, data) {
-          if (err) {
-            if (err.message.includes("Cannot provide multiple Tags with the same key")) {
-              res.status(404).send({ Result: "Keys must be unique." });
-            } else if (err.message.includes("Object tags cannot be greater than 10")) {
-              res.status(400).send({ Result: "Object tags cannot be greater than 10" })
-            } else if (err.message.includes("The TagKey you have provided is invalid")) {
-              res.status(400).send({ Result: "A tag key is required." })
-            } else {
-              res.status(500).send({ Result: 'Error renaming object', err });
-            }
-          } else {
-            res.send({ Result: 'Object tags updated successfully!' });
-          }
-        });
+        res.send({ Result: "A tag key is required." });
       }
-    });
+    }
+  });
 });
+
+  
