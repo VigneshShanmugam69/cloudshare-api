@@ -6,6 +6,7 @@ const generator = require('generate-password');
 const keytar = require('keytar');
 const okta = require('@okta/okta-sdk-nodejs');
 const mail = require('./email');
+const { format } = require('date-fns');
 exports.router = (0, express_1.Router)();
 
 exports.router.post('/storeTheCredential', async (req, res) => {
@@ -132,7 +133,8 @@ exports.router.post('/importAllUsers', async (req, res) => {
             token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd',
             redirectUri: 'http://127.0.0.1:4201/callback'
         });
-
+        const currentDate = new Date();
+        const formattedDate = format(currentDate, 'MM-dd-yyyy');
         var groupId = req.body.groupId;
         const group = await authClient.getGroup(groupId)
         var users = []
@@ -151,8 +153,8 @@ exports.router.post('/importAllUsers', async (req, res) => {
             var userid = user.id;
             var userInfo = await connection.query(selectQuery, userid);
             if (userInfo[0].length == 0) {
-                var sql = "INSERT INTO directoryusers (Firstname,Lastname,UserId,Email,Status,ADGroup) VALUES ?";
-                var values = [[user.firstname, user.lastname, user.id, user.email, user.status, group.profile.name]];
+                var sql = "INSERT INTO directoryusers (Firstname,Lastname,UserId,Email,Status,ADGroup,CreatedDate) VALUES ?";
+                var values = [[user.firstname, user.lastname, user.id, user.email, user.status, group.profile.name, formattedDate]];
                 await connection.query(sql, [values]);
             }
             else {
@@ -190,6 +192,8 @@ exports.router.post('/importUsers', async (req, res) => {
             token: '008DWbCPRmqViVAJXrcYmeHDEVUTEnatX66-FDQwvd',
             redirectUri: 'http://127.0.0.1:4201/callback'
         });
+        const currentDate = new Date();
+        const formattedDate = format(currentDate, 'MM-dd-yyyy');
         var groupId = req.body.groupId;
         var userId = req.body.userId;
         for (const groupid of groupId) {
@@ -212,8 +216,8 @@ exports.router.post('/importUsers', async (req, res) => {
                         var userid = user;
                         var userInfo = await connection.query(selectQuery, user);
                         if (userInfo[0].length == 0) {
-                            var sql = "INSERT INTO directoryusers (Firstname,Lastname,UserId,Email,Status,ADGroup) VALUES ?";
-                            var values = [[userinfo.firstname, userinfo.lastname, userinfo.id, userinfo.email, userinfo.status, group.profile.name]];
+                            var sql = "INSERT INTO directoryusers (Firstname,Lastname,UserId,Email,Status,ADGroup,CreatedDate) VALUES ?";
+                            var values = [[userinfo.firstname, userinfo.lastname, userinfo.id, userinfo.email, userinfo.status, group.profile.name, formattedDate]];
                             await connection.query(sql, [values]);
                         }
                         else {

@@ -450,7 +450,8 @@ exports.router.get('/listLocalUser', async (req, res) => {
                 lastname: listUser[0][i].Lastname,
                 email: listUser[0][i].Email,
                 status: listUser[0][i].Status,
-                isfirst: listUser[0][i].IsFirst
+                isfirst: listUser[0][i].IsFirst,
+                createdDate: listUser[0][i].CreatedDate
             });
         }
         let obj = {
@@ -484,7 +485,8 @@ exports.router.get('/listDirectoryUsers', async (req, res) => {
                 lastname: listUser[0][i].Lastname,
                 email: listUser[0][i].Email,
                 status: listUser[0][i].Status,
-                ADGroup: listUser[0][i].ADGroup
+                ADGroup: listUser[0][i].ADGroup,
+                createdDate: listUser[0][i].CreatedDate
             });
         }
         let obj = {
@@ -545,27 +547,31 @@ exports.router.post('/createLocalUsers', async (req, res) => {
         var email = req.body.email;
         let password = req.body.password;
         const currentDate = new Date();
-        const formattedDate = currentDate.toISOString('MM/dd/yyyy').slice(0, 19).replace('T', ' ');
-        // const formattedDate = currentDate.toISOString();
-        // const formattedDate =format(currentDate,'MM-dd-yyyy hh:mm');
+        // const formattedDate = currentDate.toISOString().slice(0, 19).replace('T', ' ');
+        // const formattedDate = new Date().toLocaleDateString('en-US', {
+        //     month: '2-digit',
+        //     day: '2-digit',
+        //     year: 'numeric',
+        //   });
+        const formattedDate = format(currentDate, 'MM-dd-yyyy');
         // const formattedDate= `${currentDate.getMonth() + 1}/${currentDate.getDate()}/${currentDate.getFullYear()}`;
-      
+
         // Check the mail already exist or not
         const connection = await (connect.connect)();
         const userexists = await connection.query('select Email from localusers where Email=?', email);
         if (!userexists[0][0]) {
-            
+
             // Check the password provided or not
             if (!password) {
 
                 // generate the the random password and save user into local database
                 var newPassword = generator.generate({ Number: true, length: 10 });
                 var sql = "INSERT INTO localusers (Firstname,Lastname,Email,Password,IsFirst,Status,CreatedDate) VALUES ?";
-                var values = [[firstName, lastName, email, newPassword, true, 'Active',formattedDate]];
+                var values = [[firstName, lastName, email, newPassword, true, 'Active', formattedDate]];
                 await connection.query(sql, [values]);
 
                 // Call mail function to send the mail to newly created user
-                // await mail.mail(email,newPassword,firstName)
+                await mail.mail(email, newPassword, firstName)
 
                 let obj = {
                     "status": 1,
@@ -577,7 +583,7 @@ exports.router.post('/createLocalUsers', async (req, res) => {
 
                 // Insert the user into local database password provided users
                 var sql = "INSERT INTO localusers (Firstname,Lastname,Email,Password,IsFirst,Status,CreatedDate) VALUES ?";
-                var values = [[firstName, lastName, email, password, false, 'Active',formattedDate]];
+                var values = [[firstName, lastName, email, password, false, 'Active', formattedDate]];
                 await connection.query(sql, [values]);
 
 
