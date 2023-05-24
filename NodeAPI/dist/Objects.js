@@ -52,28 +52,42 @@
     }});     
   });
   
-
   // Metadata of the object 
   exports.router.post('/getmetadata', async (req, res) => {
     const payload = req.body;
+    const bucketName = payload.bucketName;
+    const folderPath = payload.folderPath;
+    const objectKey = folderPath + payload.objectKey;
     const params = {
-      Bucket: payload.Bucket,      
-      Key: payload.Key
+      Bucket: bucketName,
+      Key: objectKey
     };
-    s3.headObject(params, function(err, data) {      
+    s3.headObject(params, function (err, data) {
       if (err) {
         if (err.code === 'NotFound') {
-          res.send({Result: 'The bucket or object does not exist'});
-        }         
-        else {
-          res.send(err, err.stack);    
+          res.send({ Result: 'The bucket or object does not exist' });
         }
-      } 
+        else {
+          res.send(err, err.stack);
+        }
+      }
       else {
-        res.send({Value: data.ContentType});          
+        const Metatda = {        
+          UserDefined : data.Metadata,        
+          SystemDefined: {
+            ContentType: data.ContentType,
+            CacheControl: data.CacheControl,
+            ContentDisposition: data.ContentDisposition,
+            ContentEncoding: data.ContentEncoding,
+            ContentLanguage: data.ContentLanguage,
+            Expires: data.Expires,
+            WebsiteRedirectLocation: data.WebsiteRedirectLocation
+          }
+        }
+        res.send({ Result: Metatda });
       }
     });
-  }); 
+  });  
 
   // Object Headers
   exports.router.post('/getHeadObjects', async (req, res) => {
