@@ -312,7 +312,7 @@ exports.router.get('/listLocalUsers', helper.verifyJwtToken, async (req, res) =>
 exports.router.put('/resetPasswordByFirstLogin', async (req, res) => {
     try {
         const { Username, Password } = req.body;
-        var query = "update cloudshare.users set Password=?,IsFirst=? where Username=?";
+        var query = "update localusers set Password=?,IsFirst=? where Email=?";
         var values = [Password, false, Username]
         const connection = await (connect.connect)();
         const result = await connection.query(query, values);
@@ -332,7 +332,11 @@ exports.router.put('/resetPasswordByFirstLogin', async (req, res) => {
         }
     }
     catch (err) {
-        res.status(500).send(err);
+        let obj = {
+            "status": 0,
+            "message": err.message
+        }
+        res.send(obj);
     }
 });
 
@@ -356,7 +360,7 @@ async function authenticateOktaUser(username, password) {
     if (authUser != false) {
         var user = await authClient.getUser(authUser.userId);
         const connection = await (connect.connect)();
-        var query = "select * from cloudshare.users where Email=?";
+        var query = "select * from directoryusers where Email=?";
         var value = user.profile.email;
         var localAuth = await connection.query(query, value);
         var userDetails = localAuth[0][0];
@@ -611,3 +615,46 @@ exports.router.post('/createLocalUsers', async (req, res) => {
         res.send(obj);
     }
 });
+
+exports.router.post('/login', async (req, res) => {
+
+    const userName = req.body.Username;
+    const password = req.body.Password;
+
+    const connection = await (connect.connect)();
+    var query = "select * from localusers where Email=? and Password=?";
+    var values = [userName, password]
+    var localAuth = await connection.query(query, values);
+    var userDetails = localAuth[0][0];
+    if (userDetails) {
+        let currentTime = Date.now(); // convert current time to Unix timestamp in seconds
+        let expiresIn = 60;  //seconds
+        let userdetails = {
+            "firstName": userDetails.Firstname,
+            "lastName": userDetails.Lastname,
+            "email": userDetails.Email,
+            "userId":userDetails.Id,
+            "iat": currentTime,
+            "exp": currentTime + expiresIn,
+        }
+        var result = await helper.createJwtToken(userdetails);
+        let obj = {
+            "status": result.status,
+            "message": result.message,
+            "token": result.token,
+            "userName":userDetails.Email,
+            "isFirst":userDetails.IsFirst
+        }
+        res.send(obj);
+    }
+    else {
+        var result = await createJwtToken(userName, password);
+        let obj = {
+            "status": result.status,
+            "message": result.message,
+            "token": result.token,
+            "isFirst":0
+        }
+        res.send(obj);
+    }
+})
